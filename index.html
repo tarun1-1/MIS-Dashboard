@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CarmaOne — AI Tele Calling MIS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#eef0fb; --bg2:#ffffff; --bg3:#e4e7f5;
+  --border:#d2d6ec; --border2:#bcc2e0;
+  --text:#111428; --text2:#454a6b; --text3:#8f95b8;
+  --indigo:#4353ff; --indigo-light:#eceeff; --indigo-mid:#b8bdff;
+  --violet:#7c3aed; --violet-light:#f0ebff;
+  --teal:#0891b2; --teal-light:#ddf4fa;
+  --emerald:#059669; --emerald-light:#dcf5ed;
+  --amber:#d97706; --amber-light:#fef3c7;
+  --rose:#e11d48; --rose-light:#fde8ee;
+  --coral:#f97316; --coral-light:#fff0e6;
+  --shadow:0 1px 4px rgba(30,40,120,0.07),0 4px 20px rgba(30,40,120,0.05);
+  --shadow-lg:0 6px 32px rgba(30,40,120,0.13);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased;}
+
+/* LOADING */
+#loadingScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:linear-gradient(140deg,#e8ebff 0%,#f3eeff 50%,#e0f4ff 100%);}
+.spinner{width:40px;height:40px;border:3px solid var(--indigo-light);border-top-color:var(--indigo);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{width:38px;height:38px;background:linear-gradient(135deg,var(--indigo),var(--violet));border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px;box-shadow:0 4px 16px rgba(67,83,255,0.35);}
+.brand-name{font-size:20px;font-weight:700;color:var(--text);}
+.loading-text{font-size:13px;color:var(--text3);}
+
+/* ERROR / FALLBACK UPLOAD */
+#errorBox{display:none;flex-direction:column;align-items:center;gap:16px;padding:32px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;max-width:460px;text-align:center;}
+.err-title{font-size:15px;font-weight:600;color:var(--text);}
+.err-sub{font-size:12px;color:var(--text3);line-height:1.7;}
+.upload-cta{background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;border:none;padding:11px 28px;border-radius:9px;font-size:13px;font-family:'Sora',sans-serif;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(67,83,255,0.3);}
+
+/* TOPBAR */
+#dashboard{display:none;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,40,120,0.06);}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.tb-mark{width:28px;height:28px;background:linear-gradient(135deg,var(--indigo),var(--violet));border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;}
+.tb-name{font-size:14px;font-weight:700;color:var(--text);}
+.tb-divider{width:1px;height:18px;background:var(--border2);margin:0 14px;}
+.tb-title{font-size:13px;color:var(--text2);}
+.view-tabs{display:flex;background:var(--bg3);border-radius:8px;padding:3px;gap:2px;}
+.view-tab{padding:6px 18px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);border:none;background:none;font-family:'Sora',sans-serif;transition:all 0.15s;}
+.view-tab.active{background:var(--bg2);color:var(--indigo);box-shadow:0 1px 4px rgba(30,40,120,0.1);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.refresh-btn{font-size:12px;color:var(--text2);background:none;border:1px solid var(--border2);border-radius:7px;padding:6px 14px;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.15s;}
+.refresh-btn:hover{color:var(--indigo);border-color:var(--indigo);}
+.last-updated{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:5px 10px;border-radius:6px;}
+
+/* CONTENT */
+.content{padding:28px 32px;max-width:1440px;margin:0 auto;}
+.view-panel{display:none;animation:fadeIn 0.25s ease;}
+.view-panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+/* PERIOD TOGGLE */
+.period-toggle{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap;}
+.ptab{padding:7px 18px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-family:'Sora',sans-serif;transition:all 0.15s;}
+.ptab.active{background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;border-color:transparent;box-shadow:0 3px 12px rgba(67,83,255,0.28);}
+.ptab.mtd-tab{border-color:var(--indigo);color:var(--indigo);}
+.ptab.mtd-tab.active{background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;}
+
+/* STAGE HEADER */
+.stage-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;margin-top:32px;}
+.stage-pill{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:4px 12px;border-radius:20px;}
+.sp-ai{background:var(--indigo-light);color:var(--indigo);}
+.sp-tele{background:var(--emerald-light);color:var(--emerald);}
+.sp-doc{background:var(--amber-light);color:var(--amber);}
+.stage-title{font-size:16px;font-weight:600;color:var(--text);}
+.stage-sub{font-size:12px;color:var(--text3);margin-left:auto;font-family:'JetBrains Mono',monospace;}
+
+/* METRIC CARDS */
+.metric-grid{display:grid;gap:10px;margin-bottom:4px;}
+.g4{grid-template-columns:repeat(4,1fr);}
+.g5{grid-template-columns:repeat(5,1fr);}
+.g6{grid-template-columns:repeat(6,1fr);}
+@media(max-width:1200px){.g6,.g5{grid-template-columns:repeat(3,1fr);}.g4{grid-template-columns:repeat(2,1fr);}}
+.mc{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);transition:box-shadow 0.2s;border-top:3px solid var(--border);}
+.mc:hover{box-shadow:var(--shadow-lg);}
+.mc.t-indigo{border-top-color:var(--indigo);}.mc.t-violet{border-top-color:var(--violet);}
+.mc.t-teal{border-top-color:var(--teal);}.mc.t-emerald{border-top-color:var(--emerald);}
+.mc.t-amber{border-top-color:var(--amber);}.mc.t-rose{border-top-color:var(--rose);}
+.mc.t-coral{border-top-color:var(--coral);}.mc.t-gray{border-top-color:var(--border2);}
+.mc-lbl{font-size:11px;color:var(--text3);margin-bottom:8px;}
+.mc-val{font-size:26px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;line-height:1;}
+.mc-pct{font-size:12px;margin-top:6px;font-family:'JetBrains Mono',monospace;font-weight:500;}
+.mc-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+.p-indigo{color:var(--indigo);}.p-violet{color:var(--violet);}.p-teal{color:var(--teal);}
+.p-emerald{color:var(--emerald);}.p-amber{color:var(--amber);}.p-rose{color:var(--rose);}
+.p-coral{color:var(--coral);}.p-gray{color:var(--text3);}
+
+/* BRIDGE */
+.bridge{display:flex;align-items:center;gap:16px;padding:14px 22px;border-radius:12px;margin:16px 0;border:1px solid var(--border);}
+.bridge-ai{background:linear-gradient(90deg,#f0f1ff,#f8f8ff);}
+.bridge-tele{background:linear-gradient(90deg,#edfaf4,#f8fffc);}
+.bridge-arrow{font-size:20px;}
+.bridge-lbl{font-size:13px;color:var(--text2);font-weight:600;}
+.bridge-sub2{font-size:11px;color:var(--text3);margin-top:3px;}
+.bridge-num{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);margin-left:auto;}
+.bridge-pct2{font-size:11px;color:var(--text3);text-align:right;font-family:'JetBrains Mono',monospace;margin-top:2px;}
+
+/* TELE BOXES */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px;}
+.tele-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);}
+.tele-box-header{padding:13px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text2);display:flex;align-items:center;justify-content:space-between;}
+.tele-box-header.h-emerald{background:linear-gradient(90deg,#e8f9f2,#f4fdf9);border-bottom-color:#c8eedd;}
+.tele-box-header.h-violet{background:linear-gradient(90deg,#f3eeff,#faf7ff);border-bottom-color:#ddd0f8;}
+.tele-box-header span{font-family:'JetBrains Mono',monospace;color:var(--text3);font-size:11px;font-weight:400;}
+.disp-list{padding:16px 18px;display:flex;flex-direction:column;gap:12px;}
+.disp-row{display:flex;align-items:center;gap:10px;}
+.disp-lbl{font-size:12px;color:var(--text2);min-width:115px;}
+.disp-bar-bg{flex:1;background:var(--bg3);border-radius:4px;height:7px;overflow:hidden;}
+.disp-bar{height:7px;border-radius:4px;transition:width 0.5s ease;}
+.disp-val{font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text);min-width:32px;text-align:right;}
+.disp-pct{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;min-width:42px;text-align:right;}
+
+/* CHAIN */
+.conv-chain{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin:32px 0 0;box-shadow:var(--shadow);}
+.conv-chain-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.conv-chain-title::before{content:'';width:4px;height:16px;background:linear-gradient(180deg,var(--indigo),var(--violet));border-radius:2px;}
+.chain-row{display:flex;align-items:center;}
+.chain-node{flex:1;}
+.chain-box{border-radius:12px;padding:14px 10px;text-align:center;border:1px solid var(--border);}
+.cn-indigo{background:var(--indigo-light);border-color:var(--indigo-mid);}
+.cn-teal{background:var(--teal-light);border-color:#a8dff0;}
+.cn-violet{background:var(--violet-light);border-color:#d5b8ff;}
+.cn-emerald{background:var(--emerald-light);border-color:#a8dfc8;}
+.cn-amber{background:var(--amber-light);border-color:#f5d88a;}
+.cn-coral{background:var(--coral-light);border-color:#fdc898;}
+.cn-rose{background:var(--rose-light);border-color:#f8adc4;}
+.chain-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;color:var(--text2);}
+.chain-value{font-size:19px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);}
+.chain-arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 5px;gap:2px;flex-shrink:0;min-width:52px;}
+.chain-conv{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.chain-arr{font-size:14px;color:var(--text3);}
+.c-good{color:var(--emerald);}.c-ok{color:var(--amber);}.c-low{color:var(--rose);}
+
+/* COMPARE TABLE */
+.compare-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px;}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;}
+.compare-table th{text-align:left;padding:12px 18px;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;}
+.compare-table th.col-day{color:var(--indigo);background:var(--indigo-light);}
+.compare-table td{padding:11px 18px;border-bottom:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;}
+.compare-table tr:last-child td{border-bottom:none;}
+.compare-table tbody tr:hover{background:var(--bg3);}
+.td-label{font-family:'Sora',sans-serif!important;font-size:12px!important;color:var(--text2)!important;font-weight:500!important;}
+.td-day{color:var(--indigo)!important;font-weight:600!important;}
+.section-row td{background:var(--bg3);font-family:'Sora',sans-serif!important;font-size:10px!important;font-weight:700!important;color:var(--text3)!important;text-transform:uppercase;letter-spacing:0.1em;padding:8px 18px!important;}
+
+.dash-footer{margin-top:36px;padding:20px 0;border-top:1px solid var(--border);font-size:11px;color:var(--text3);display:flex;justify-content:space-between;}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+  <div class="loading-brand">
+    <div class="brand-mark">C</div>
+    <div class="brand-name">CarmaOne</div>
+  </div>
+  <div class="spinner"></div>
+  <div class="loading-text">Loading MIS data...</div>
+  <div id="errorBox">
+    <div class="err-title">Could not load data automatically</div>
+    <div class="err-sub">Upload your Excel file manually below. This happens when the data file is not yet pushed to GitHub.</div>
+    <button class="upload-cta" onclick="document.getElementById('fileInput').click()">Upload Excel file</button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileUpload(this.files[0])">
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="tb-mark">C</div>
+      <div class="tb-name">CarmaOne</div>
+      <div class="tb-divider"></div>
+      <div class="tb-title">AI Tele Calling MIS</div>
+    </div>
+    <div class="view-tabs">
+      <button class="view-tab active" onclick="switchView('main',this)">Dashboard</button>
+      <button class="view-tab" onclick="switchView('compare',this)">Day-wise View</button>
+    </div>
+    <div class="topbar-right">
+      <div class="last-updated" id="lastUpdated">—</div>
+      <button class="refresh-btn" onclick="loadData()">↺ Refresh</button>
+      <button class="refresh-btn" onclick="clearAndUpload()" style="color:var(--rose);border-color:var(--rose);">↑ New file</button>
+    </div>
+  </div>
+  <div class="content">
+    <div id="view-main" class="view-panel active"></div>
+    <div id="view-compare" class="view-panel"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG — update this path if your Excel filename changes ──
+const EXCEL_PATH = 'AI_Tele_Calling_MIS.xlsx';
+
+let G = null;
+
+// ── AUTO LOAD ON PAGE OPEN ──
+window.addEventListener('load', loadData);
+
+async function loadData() {
+  document.getElementById('loadingScreen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('loadingScreen').querySelector('.loading-text').textContent = 'Loading MIS data...';
+
+  // First check localStorage for previously uploaded data
+  const cached = localStorage.getItem('carmaone_mis_data');
+  if (cached) {
+    try {
+      const binary = atob(cached);
+      const buf = new ArrayBuffer(binary.length);
+      const view = new Uint8Array(buf);
+      for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
+      processBuffer(buf, false); // false = don't re-save, already saved
+      return;
+    } catch(e) {
+      localStorage.removeItem('carmaone_mis_data');
+    }
+  }
+
+  // No cache — try fetching from GitHub
+  try {
+    const url = EXCEL_PATH + '?v=' + Date.now();
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('File not found');
+    const buf = await res.arrayBuffer();
+    processBuffer(buf);
+  } catch(e) {
+    // Show fallback upload
+    document.getElementById('loadingScreen').querySelector('.loading-text').textContent = 'Upload today\'s MIS file';
+    document.getElementById('errorBox').style.display = 'flex';
+  }
+}
+
+function handleFileUpload(file) {
+  const reader = new FileReader();
+  reader.onload = e => processBuffer(e.target.result);
+  reader.readAsArrayBuffer(file);
+}
+
+function processBuffer(buf, saveToStorage) {
+  const wb = XLSX.read(buf, {type:'array', cellDates:true});
+  G = parseWorkbook(wb);
+  // Save to localStorage so refresh restores data
+  if (saveToStorage !== false) {
+    try {
+      const uint8 = new Uint8Array(buf);
+      let binary = '';
+      uint8.forEach(b => binary += String.fromCharCode(b));
+      const b64 = btoa(binary);
+      localStorage.setItem('carmaone_mis_data', b64);
+      localStorage.setItem('carmaone_mis_time', new Date().toISOString());
+    } catch(e) { console.log('Storage save failed', e); }
+  }
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  const saved = localStorage.getItem('carmaone_mis_time');
+  const timeStr = saved ? new Date(saved).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('lastUpdated').textContent = 'Data: ' + timeStr;
+  renderMain(0);
+  renderCompare();
+}
+
+function fmtDate(val) {
+  if (!val) return 'Today';
+  if (val instanceof Date) return val.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  if (typeof val === 'number') {
+    const d = new Date(Math.round((val-25569)*86400*1000));
+    return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  }
+  return String(val);
+}
+
+function parseWorkbook(wb) {
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rawRows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true});
+
+  // Row 0 = header: col0=null, col1=MTD label, col2+=daily dates
+  const headerRow = rawRows[0] || [];
+  const numCols = headerRow.length;
+
+  const periods = []; // index 0 = MTD, 1..n = daily columns
+  for (let c = 1; c < numCols; c++) {
+    const hv = headerRow[c];
+    if (hv === null || hv === undefined) continue;
+    const label = (c === 1) ? String(hv) : fmtDate(hv);
+    periods.push({ label, colIdx: c });
+  }
+
+  const getRow = label => rawRows.find(r => r[0] && String(r[0]).toLowerCase().includes(label.toLowerCase()));
+  const docBaseIdx = rawRows.findIndex(r => r[0] && String(r[0]).toLowerCase().includes('total documents'));
+
+  const rTotal = getRow('total ai calls');
+  const rConn  = getRow('ai connected');
+  const rNMC   = getRow('ai nmc');
+  const rMFC   = getRow('ai meaning');
+  const rAiInt = getRow('ai interested');
+  const rAiCB  = getRow('ai call back');
+  const taiIdx = rawRows.findIndex(r => r[0] && String(r[0]).toLowerCase().includes('tele team (ai int'));
+  const tcbIdx = rawRows.findIndex(r => r[0] && String(r[0]).toLowerCase().includes('tele team (call back'));
+
+  const dkeys = ['Interested','Call Back','Not Interested','RNR','Not Elligible'];
+
+  const buildPeriod = (colIdx, label) => {
+    const v = r => r ? (parseFloat(r[colIdx]) || 0) : 0;
+
+    const totalAI   = v(rTotal);
+    const connected = v(rConn);
+    const nmc       = v(rNMC);
+    const mfcRaw    = v(rMFC);
+    const mfc       = mfcRaw > 0 ? mfcRaw : Math.max(0, connected - nmc);
+    const aiInt     = v(rAiInt);
+    const aiCB      = v(rAiCB);
+
+    const ti = {}, tc = {};
+    dkeys.forEach((k,i) => {
+      ti[k] = taiIdx >= 0 ? (parseFloat((rawRows[taiIdx+i+1]||[])[colIdx])||0) : 0;
+      tc[k] = tcbIdx >= 0 ? (parseFloat((rawRows[tcbIdx+i+1]||[])[colIdx])||0) : 0;
+    });
+
+    const docTotal  = (ti['Interested']||0) + (tc['Interested']||0);
+    const collected = docBaseIdx >= 0 ? (parseFloat((rawRows[docBaseIdx+1]||[])[colIdx])||0) : 0;
+    const partial   = docBaseIdx >= 0 ? (parseFloat((rawRows[docBaseIdx+2]||[])[colIdx])||0) : 0;
+    const wip       = docBaseIdx >= 0 ? (parseFloat((rawRows[docBaseIdx+3]||[])[colIdx])||0) : 0;
+    const dropout   = docBaseIdx >= 0 ? (parseFloat((rawRows[docBaseIdx+4]||[])[colIdx])||0) : 0;
+    const rejected  = docBaseIdx >= 0 ? (parseFloat((rawRows[docBaseIdx+5]||[])[colIdx])||0) : 0;
+    const disbursed = docBaseIdx >= 0 ? (parseFloat((rawRows[docBaseIdx+6]||[])[colIdx])||0) : 0;
+
+    return { label, totalAI, connected, nmc, mfc, aiInt, aiCB, ti, tc,
+             doc: { docTotal, collected, partial, wip, dropout, rejected, disbursed } };
+  };
+
+  return { periods: periods.map(p => buildPeriod(p.colIdx, p.label)) };
+}
+
+// ── UTILS ──
+const fmt  = n => (parseInt(n)||0).toLocaleString('en-IN');
+const fmtD = n => (parseFloat(n)||0).toFixed(1)+'%';
+const pct  = (n,d) => (!d||d===0)?'—':((n/d)*100).toFixed(1)+'%';
+const pctN = (n,d) => (!d||d===0)?0:(n/d)*100;
+const convCls = (v,g,o) => v>=g?'c-good':v>=o?'c-ok':'c-low';
+
+// ── RENDER MAIN ──
+function renderMain(periodIdx) {
+  const d   = G.periods[periodIdx];
+  const a   = d;
+  const ti  = d.ti, tc = d.tc, doc = d.doc;
+
+  const transferred  = a.aiInt + a.aiCB;
+  const teleIntTotal = Object.values(ti).reduce((s,v)=>s+(v||0),0);
+  const teleCBTotal  = Object.values(tc).reduce((s,v)=>s+(v||0),0);
+  const teleInt      = (ti['Interested']||0)+(tc['Interested']||0);
+  const docAccounted = (doc.collected||0)+(doc.partial||0)+(doc.wip||0)+(doc.dropout||0)+(doc.rejected||0)+(doc.disbursed||0);
+  const docPending   = Math.max(0, doc.docTotal - docAccounted);
+
+  const ch = [
+    {v:pctN(a.connected,a.totalAI),    cls:convCls(pctN(a.connected,a.totalAI),60,40)},
+    {v:pctN(a.mfc,a.connected),         cls:convCls(pctN(a.mfc,a.connected),50,30)},
+    {v:pctN(transferred,a.mfc),         cls:convCls(pctN(transferred,a.mfc),30,15)},
+    {v:pctN(teleInt,transferred),       cls:convCls(pctN(teleInt,transferred),25,10)},
+    {v:pctN(doc.docTotal,teleInt),      cls:convCls(pctN(doc.docTotal,teleInt),80,50)},
+    {v:pctN(doc.disbursed,doc.docTotal),cls:convCls(pctN(doc.disbursed,doc.docTotal),70,40)},
+  ];
+
+  // Build period toggle buttons
+  const toggleBtns = G.periods.map((p,i) =>
+    `<button class="ptab ${i===0?'mtd-tab':''} ${i===periodIdx?'active':''}" onclick="renderMain(${i})">${i===0?'📅':'📆'} ${p.label}</button>`
+  ).join('');
+
+  document.getElementById('view-main').innerHTML = `
+    <div class="period-toggle">${toggleBtns}</div>
+
+    <div class="stage-header" style="margin-top:0;">
+      <div class="stage-pill sp-ai">Stage 1</div>
+      <div class="stage-title">AI Auto-Calling</div>
+      <div class="stage-sub">${d.label} &nbsp;·&nbsp; Batch: ${fmt(a.totalAI)} leads</div>
+    </div>
+    <div class="metric-grid g5">
+      <div class="mc t-indigo"><div class="mc-lbl">Total AI Calls</div><div class="mc-val">${fmt(a.totalAI)}</div><div class="mc-sub">Full batch dialled</div></div>
+      <div class="mc t-teal"><div class="mc-lbl">AI Connected</div><div class="mc-val">${fmt(a.connected)}</div><div class="mc-pct p-teal">${pct(a.connected,a.totalAI)} connect rate</div></div>
+      <div class="mc t-gray"><div class="mc-lbl">AI NMC</div><div class="mc-val">${fmt(a.nmc)}</div><div class="mc-pct p-gray">${pct(a.nmc,a.connected)} of connected</div></div>
+      <div class="mc t-violet"><div class="mc-lbl">Meaningful Connect</div><div class="mc-val">${fmt(a.mfc)}</div><div class="mc-pct p-violet">${pct(a.mfc,a.connected)} of connected</div></div>
+      <div class="mc t-rose"><div class="mc-lbl">Not Reachable</div><div class="mc-val">${fmt(a.totalAI-a.connected)}</div><div class="mc-pct p-rose">${pct(a.totalAI-a.connected,a.totalAI)} of batch</div></div>
+    </div>
+    <div class="metric-grid g4" style="margin-top:10px;">
+      <div class="mc t-emerald"><div class="mc-lbl">AI Interested</div><div class="mc-val">${fmt(a.aiInt)}</div><div class="mc-pct p-emerald">${pct(a.aiInt,a.mfc)} of MFC</div></div>
+      <div class="mc t-coral"><div class="mc-lbl">AI Call Back</div><div class="mc-val">${fmt(a.aiCB)}</div><div class="mc-pct p-coral">${pct(a.aiCB,a.mfc)} of MFC</div></div>
+      <div class="mc t-indigo"><div class="mc-lbl">AI Productive (Int + CB)</div><div class="mc-val">${fmt(a.aiInt+a.aiCB)}</div><div class="mc-pct p-indigo">${pct(a.aiInt+a.aiCB,a.mfc)} of MFC</div></div>
+      <div class="mc t-rose"><div class="mc-lbl">Not Interested (of MFC)</div><div class="mc-val">${fmt(Math.max(0,a.mfc-a.aiInt-a.aiCB))}</div><div class="mc-pct p-rose">${pct(Math.max(0,a.mfc-a.aiInt-a.aiCB),a.mfc)} — dropped</div></div>
+    </div>
+
+    <div class="bridge bridge-ai">
+      <div class="bridge-arrow">↓</div>
+      <div><div class="bridge-lbl">Transferred to Tele Team</div><div class="bridge-sub2">${fmt(a.aiInt)} AI Interested &nbsp;+&nbsp; ${fmt(a.aiCB)} AI Callback requests</div></div>
+      <div><div class="bridge-num">${fmt(transferred)}</div><div class="bridge-pct2">${pct(transferred,a.totalAI)} of batch</div></div>
+    </div>
+
+    <div class="stage-header">
+      <div class="stage-pill sp-tele">Stage 2</div>
+      <div class="stage-title">Tele Team Calling</div>
+      <div class="stage-sub">Allocated: ${fmt(transferred)} leads across 2 queues</div>
+    </div>
+    <div class="two-col">
+      <div class="tele-box">
+        <div class="tele-box-header h-emerald">Queue A — AI Interested <span>${fmt(a.aiInt)} leads</span></div>
+        <div class="disp-list">
+          ${dr('Interested',     ti['Interested']||0,    a.aiInt,'#059669')}
+          ${dr('Call Back',      ti['Call Back']||0,     a.aiInt,'#0891b2')}
+          ${dr('Not Interested', ti['Not Interested']||0,a.aiInt,'#e11d48')}
+          ${dr('RNR',            ti['RNR']||0,           a.aiInt,'#d97706')}
+          ${dr('Not Eligible',   ti['Not Elligible']||0, a.aiInt,'#9298b5')}
+          ${dr('Pending',        Math.max(0,a.aiInt-teleIntTotal),a.aiInt,'#c4c8da')}
+        </div>
+      </div>
+      <div class="tele-box">
+        <div class="tele-box-header h-violet">Queue B — AI Callback <span>${fmt(a.aiCB)} leads</span></div>
+        <div class="disp-list">
+          ${dr('Interested',     tc['Interested']||0,    a.aiCB,'#059669')}
+          ${dr('Call Back',      tc['Call Back']||0,     a.aiCB,'#0891b2')}
+          ${dr('Not Interested', tc['Not Interested']||0,a.aiCB,'#e11d48')}
+          ${dr('RNR',            tc['RNR']||0,           a.aiCB,'#d97706')}
+          ${dr('Not Eligible',   tc['Not Elligible']||0, a.aiCB,'#9298b5')}
+          ${dr('Pending',        Math.max(0,a.aiCB-teleCBTotal),a.aiCB,'#c4c8da')}
+        </div>
+      </div>
+    </div>
+
+    <div class="bridge bridge-tele" style="margin-top:14px;">
+      <div class="bridge-arrow">↓</div>
+      <div><div class="bridge-lbl">Pushed for document submission</div><div class="bridge-sub2">${fmt(ti['Interested']||0)} from Queue A &nbsp;+&nbsp; ${fmt(tc['Interested']||0)} from Queue B</div></div>
+      <div><div class="bridge-num">${fmt(doc.docTotal)}</div><div class="bridge-pct2">${pct(doc.docTotal,transferred)} of tele allocated</div></div>
+    </div>
+
+    <div class="stage-header">
+      <div class="stage-pill sp-doc">Stage 3</div>
+      <div class="stage-title">Document Collection</div>
+      <div class="stage-sub">To be collected: ${fmt(doc.docTotal)}</div>
+    </div>
+    <div class="metric-grid g6" style="margin-bottom:10px;">
+      <div class="mc t-amber"><div class="mc-lbl">To Be Collected</div><div class="mc-val">${fmt(doc.docTotal)}</div><div class="mc-sub">From tele interested</div></div>
+      <div class="mc t-emerald"><div class="mc-lbl">Collected</div><div class="mc-val">${fmt(doc.collected)}</div><div class="mc-pct p-emerald">${pct(doc.collected,doc.docTotal)}</div></div>
+      <div class="mc t-coral"><div class="mc-lbl">Partially Collected</div><div class="mc-val">${fmt(doc.partial)}</div><div class="mc-pct p-coral">${pct(doc.partial,doc.docTotal)}</div></div>
+      <div class="mc t-indigo"><div class="mc-lbl">WIP</div><div class="mc-val">${fmt(doc.wip)}</div><div class="mc-pct p-indigo">${pct(doc.wip,doc.docTotal)} — in processing</div></div>
+      <div class="mc t-rose"><div class="mc-lbl">Drop Out</div><div class="mc-val">${fmt(doc.dropout)}</div><div class="mc-pct p-rose">${pct(doc.dropout,doc.docTotal)}</div></div>
+      <div class="mc t-rose"><div class="mc-lbl">Rejected — Lender</div><div class="mc-val">${fmt(doc.rejected)}</div><div class="mc-pct p-rose">${pct(doc.rejected,doc.docTotal)}</div></div>
+    </div>
+    <div class="metric-grid g4" style="margin-bottom:28px;">
+      <div class="mc" style="border-top:3px solid var(--emerald);background:linear-gradient(135deg,#f0fdf8,#fff);">
+        <div class="mc-lbl">Disbursed</div>
+        <div class="mc-val" style="font-size:30px;color:var(--emerald);">${fmt(doc.disbursed)}</div>
+        <div class="mc-pct p-emerald">${pct(doc.disbursed,doc.docTotal)} of doc collected</div>
+        <div class="mc-sub">${pct(doc.disbursed,a.totalAI)} end-to-end of full batch</div>
+      </div>
+      <div class="mc t-gray"><div class="mc-lbl">Not Yet Submitted</div><div class="mc-val">${fmt(docPending)}</div><div class="mc-pct p-rose">${pct(docPending,doc.docTotal)} — re-engage</div></div>
+      <div class="mc t-teal"><div class="mc-lbl">Doc Submission Rate</div><div class="mc-val">${fmtD(pctN((doc.collected||0)+(doc.partial||0),doc.docTotal))}</div><div class="mc-sub">Full + partial of total pushed</div></div>
+      <div class="mc t-violet"><div class="mc-lbl">Doc → Disbursal Rate</div><div class="mc-val">${fmtD(pctN(doc.disbursed,doc.docTotal))}</div><div class="mc-sub">Of collected docs reaching disbursal</div></div>
+    </div>
+
+    <div class="conv-chain">
+      <div class="conv-chain-title">Stage-by-stage conversion chain</div>
+      <div class="chain-row">
+        ${cn('AI Dialled',a.totalAI,'cn-indigo')}${ca(ch[0])}
+        ${cn('AI Connected',a.connected,'cn-teal')}${ca(ch[1])}
+        ${cn('MFC',a.mfc,'cn-violet')}${ca(ch[2])}
+        ${cn('Transferred',transferred,'cn-emerald')}${ca(ch[3])}
+        ${cn('Tele Interested',teleInt,'cn-amber')}${ca(ch[4])}
+        ${cn('Doc Push',doc.docTotal,'cn-coral')}${ca(ch[5])}
+        ${cn('Disbursed',doc.disbursed,'cn-rose')}
+      </div>
+    </div>
+
+    <div class="dash-footer">
+      <span>CarmaOne — AI Tele Calling MIS &nbsp;·&nbsp; Confidential</span>
+      <span>Generated ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</span>
+    </div>
+  `;
+}
+
+// ── RENDER COMPARE (day-wise table) ──
+function renderCompare() {
+  const periods = G.periods;
+
+  const metricRows = [
+    {s:true, label:'STAGE 1 — AI AUTO-CALLING'},
+    {label:'Total AI Calls',        fn: d => ({v:d.totalAI})},
+    {label:'AI Connected',          fn: d => ({v:d.connected,     p:pct(d.connected,d.totalAI)})},
+    {label:'AI NMC',                fn: d => ({v:d.nmc,           p:pct(d.nmc,d.connected)})},
+    {label:'Meaningful Connect',    fn: d => ({v:d.mfc,           p:pct(d.mfc,d.connected)})},
+    {label:'AI Interested',         fn: d => ({v:d.aiInt,         p:pct(d.aiInt,d.mfc)})},
+    {label:'AI Call Back',          fn: d => ({v:d.aiCB,          p:pct(d.aiCB,d.mfc)})},
+    {label:'AI Productive',         fn: d => ({v:d.aiInt+d.aiCB,  p:pct(d.aiInt+d.aiCB,d.mfc)})},
+    {label:'Not Reachable',         fn: d => ({v:d.totalAI-d.connected, p:pct(d.totalAI-d.connected,d.totalAI)})},
+    {s:true, label:'STAGE 2 — TELE QUEUE A (AI INTERESTED)'},
+    {label:'Interested',            fn: d => ({v:d.ti['Interested']||0,    p:pct(d.ti['Interested']||0,d.aiInt)})},
+    {label:'Call Back',             fn: d => ({v:d.ti['Call Back']||0,     p:pct(d.ti['Call Back']||0,d.aiInt)})},
+    {label:'Not Interested',        fn: d => ({v:d.ti['Not Interested']||0,p:pct(d.ti['Not Interested']||0,d.aiInt)})},
+    {label:'RNR',                   fn: d => ({v:d.ti['RNR']||0,           p:pct(d.ti['RNR']||0,d.aiInt)})},
+    {label:'Not Eligible',          fn: d => ({v:d.ti['Not Elligible']||0, p:pct(d.ti['Not Elligible']||0,d.aiInt)})},
+    {s:true, label:'STAGE 2 — TELE QUEUE B (AI CALLBACK)'},
+    {label:'Interested',            fn: d => ({v:d.tc['Interested']||0,    p:pct(d.tc['Interested']||0,d.aiCB)})},
+    {label:'Call Back',             fn: d => ({v:d.tc['Call Back']||0,     p:pct(d.tc['Call Back']||0,d.aiCB)})},
+    {label:'Not Interested',        fn: d => ({v:d.tc['Not Interested']||0,p:pct(d.tc['Not Interested']||0,d.aiCB)})},
+    {label:'RNR',                   fn: d => ({v:d.tc['RNR']||0,           p:pct(d.tc['RNR']||0,d.aiCB)})},
+    {label:'Not Eligible',          fn: d => ({v:d.tc['Not Elligible']||0, p:pct(d.tc['Not Elligible']||0,d.aiCB)})},
+    {s:true, label:'STAGE 3 — DOCUMENT COLLECTION'},
+    {label:'To Be Collected',       fn: d => ({v:d.doc.docTotal})},
+    {label:'Collected',             fn: d => ({v:d.doc.collected,  p:pct(d.doc.collected,d.doc.docTotal)})},
+    {label:'Partially Collected',   fn: d => ({v:d.doc.partial,    p:pct(d.doc.partial,d.doc.docTotal)})},
+    {label:'WIP',                   fn: d => ({v:d.doc.wip,        p:pct(d.doc.wip,d.doc.docTotal)})},
+    {label:'Drop Out',              fn: d => ({v:d.doc.dropout,    p:pct(d.doc.dropout,d.doc.docTotal)})},
+    {label:'Rejected — Lender',     fn: d => ({v:d.doc.rejected,   p:pct(d.doc.rejected,d.doc.docTotal)})},
+    {label:'Disbursed',             fn: d => ({v:d.doc.disbursed,  p:pct(d.doc.disbursed,d.doc.docTotal)})},
+    {s:true, label:'KEY RATIOS'},
+    {label:'AI Productive Rate',    fn: d => ({v:fmtD(pctN(d.aiInt+d.aiCB,d.mfc)), raw:true})},
+    {label:'AI Interest Rate',      fn: d => ({v:fmtD(pctN(d.aiInt,d.mfc)), raw:true})},
+    {label:'AI Callback Rate',      fn: d => ({v:fmtD(pctN(d.aiCB,d.mfc)), raw:true})},
+    {label:'MFC Rate',              fn: d => ({v:fmtD(pctN(d.mfc,d.connected)), raw:true})},
+    {label:'AI → Tele Conv.',       fn: d => ({v:fmtD(pctN((d.ti['Interested']||0)+(d.tc['Interested']||0),d.aiInt+d.aiCB)), raw:true})},
+    {label:'Tele RNR Rate',         fn: d => ({v:fmtD(pctN((d.ti['RNR']||0)+(d.tc['RNR']||0),d.aiInt+d.aiCB)), raw:true})},
+    {label:'Doc Submission Rate',   fn: d => ({v:fmtD(pctN(d.doc.collected+d.doc.partial,d.doc.docTotal)), raw:true})},
+    {label:'End-to-End Conv.',      fn: d => ({v:fmtD(pctN(d.doc.disbursed,d.totalAI)), raw:true})},
+  ];
+
+  const thead = `<tr>
+    <th style="min-width:200px;">Metric</th>
+    ${periods.map((p,i) => `<th class="${i>0?'col-day':''}">${p.label}</th>`).join('')}
+  </tr>`;
+
+  const tbody = metricRows.map(row => {
+    if (row.s) return `<tr class="section-row"><td colspan="${periods.length+1}">${row.label}</td></tr>`;
+    const cells = periods.map((p,i) => {
+      const r = row.fn(G.periods[i]);
+      const val = r.raw ? r.v : fmt(r.v);
+      const pctStr = r.p ? ` <span style="color:var(--text3);font-size:10px;">${r.p}</span>` : '';
+      return `<td class="${i>0?'td-day':''}">${val}${pctStr}</td>`;
+    }).join('');
+    return `<tr><td class="td-label">${row.label}</td>${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('view-compare').innerHTML = `
+    <div style="margin-bottom:24px;">
+      <div style="font-size:20px;font-weight:300;color:var(--text);letter-spacing:-0.3px;"><strong>Day-wise</strong> Comparison</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:5px;">All periods side by side — new columns appear automatically as daily data is added</div>
+    </div>
+    <div style="overflow-x:auto;">
+      <div class="compare-wrap">
+        <table class="compare-table">
+          <thead>${thead}</thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="dash-footer">
+      <span>CarmaOne — AI Tele Calling MIS &nbsp;·&nbsp; Confidential</span>
+      <span>Generated ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</span>
+    </div>
+  `;
+}
+
+function dr(label,val,total,color){
+  const w=total>0?Math.min(100,(val/total*100)):0;
+  return `<div class="disp-row"><div class="disp-lbl">${label}</div><div class="disp-bar-bg"><div class="disp-bar" style="width:${w}%;background:${color};"></div></div><div class="disp-val">${fmt(val)}</div><div class="disp-pct">${pct(val,total)}</div></div>`;
+}
+function cn(label,val,cls){return `<div class="chain-node"><div class="chain-box ${cls}"><div class="chain-label">${label}</div><div class="chain-value">${fmt(val)}</div></div></div>`;}
+function ca(conv){return `<div class="chain-arrow"><div class="chain-conv ${conv.cls}">${fmtD(conv.v)}</div><div class="chain-arr">→</div></div>`;}
+
+function clearAndUpload(){
+  localStorage.removeItem('carmaone_mis_data');
+  localStorage.removeItem('carmaone_mis_time');
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('loadingScreen').style.display='flex';
+  document.getElementById('loadingScreen').querySelector('.loading-text').textContent='Upload today\'s MIS file';
+  document.getElementById('errorBox').style.display='flex';
+}
+
+function switchView(v,btn){
+  document.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('view-'+v).classList.add('active');
+}
+</script>
+</body>
+</html>
