@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CarmaOne — MIS Upload</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+:root {
+  --bg:#eef0fb; --bg2:#ffffff; --border:#d2d6ec;
+  --text:#111428; --text2:#454a6b; --text3:#8f95b8;
+  --indigo:#4353ff; --indigo-light:#eceeff;
+  --violet:#7c3aed;
+  --emerald:#059669; --emerald-light:#dcf5ed;
+  --rose:#e11d48; --rose-light:#fde8ee;
+  --amber:#d97706; --amber-light:#fef3c7;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sora',sans-serif;background:linear-gradient(140deg,#e8ebff 0%,#f3eeff 50%,#e0f4ff 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+
+.card{background:var(--bg2);border-radius:20px;padding:36px 40px;width:100%;max-width:480px;box-shadow:0 8px 40px rgba(30,40,120,0.12);}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:28px;justify-content:center;}
+.brand-mark{width:38px;height:38px;background:linear-gradient(135deg,var(--indigo),var(--violet));border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px;box-shadow:0 4px 16px rgba(67,83,255,0.35);}
+.brand-name{font-size:20px;font-weight:700;color:var(--text);}
+
+/* STATUS BANNER */
+.status-banner{border-radius:10px;padding:11px 16px;margin-bottom:22px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:9px;}
+.status-banner.uploaded{background:var(--emerald-light);color:var(--emerald);}
+.status-banner.pending{background:var(--amber-light);color:var(--amber);}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sb-dot.green{background:var(--emerald);}
+.sb-dot.amber{background:var(--amber);}
+
+/* PIN */
+.section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+.pin-wrap{display:flex;gap:10px;margin-bottom:18px;align-items:center;}
+.pin-input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:'Sora',sans-serif;color:var(--text);background:var(--bg);outline:none;transition:border 0.15s;letter-spacing:0.2em;}
+.pin-input:focus{border-color:var(--indigo);background:#fff;}
+.pin-input.valid{border-color:var(--emerald);background:var(--emerald-light);}
+.pin-input.invalid{border-color:var(--rose);background:var(--rose-light);}
+.pin-name{font-size:13px;font-weight:600;color:var(--emerald);min-width:80px;}
+.pin-err{font-size:11px;color:var(--rose);margin-top:-12px;margin-bottom:10px;display:none;}
+
+/* DROP ZONE */
+.drop-zone{border:2px dashed var(--border);border-radius:14px;padding:36px 24px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg);margin-bottom:16px;}
+.drop-zone.locked{opacity:0.5;cursor:not-allowed;}
+.drop-zone:not(.locked):hover,.drop-zone.drag-over{border-color:var(--indigo);background:var(--indigo-light);}
+.drop-icon{font-size:30px;margin-bottom:10px;}
+.drop-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px;}
+.drop-sub{font-size:11px;color:var(--text3);}
+
+.file-tag{font-size:12px;color:var(--emerald);font-weight:500;margin-bottom:14px;text-align:center;padding:7px 14px;background:var(--emerald-light);border-radius:8px;display:none;}
+
+.upload-btn{width:100%;background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;border:none;padding:13px;border-radius:10px;font-size:14px;font-family:'Sora',sans-serif;font-weight:600;cursor:pointer;transition:all 0.15s;box-shadow:0 4px 16px rgba(67,83,255,0.32);}
+.upload-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(67,83,255,0.4);}
+.upload-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none;}
+
+/* FEEDBACK */
+.feedback{margin-top:14px;border-radius:10px;padding:12px 16px;font-size:12px;font-weight:500;display:none;}
+.feedback.success{background:var(--emerald-light);color:var(--emerald);}
+.feedback.error{background:var(--rose-light);color:var(--rose);}
+.feedback.loading{background:var(--indigo-light);color:var(--indigo);}
+
+/* VALIDATION ERRORS */
+.val-errors{margin-top:12px;background:var(--rose-light);border:1px solid #f8adc4;border-radius:10px;padding:12px 16px;display:none;}
+.val-errors-title{font-size:12px;font-weight:600;color:var(--rose);margin-bottom:8px;}
+.val-errors ul{margin:0;padding-left:16px;}
+.val-errors li{font-size:11px;color:var(--rose);margin-bottom:4px;line-height:1.5;}
+
+/* CHANGES */
+.changes-box{margin-top:12px;background:#f4fdf9;border:1px solid #a8dfc8;border-radius:10px;padding:12px 16px;display:none;}
+.changes-title{font-size:12px;font-weight:600;color:var(--emerald);margin-bottom:8px;}
+.changes-box ul{margin:0;padding-left:16px;}
+.changes-box li{font-size:11px;color:#1a6b4a;margin-bottom:3px;line-height:1.5;}
+
+.dashboard-link{display:block;text-align:center;margin-top:20px;font-size:12px;color:var(--text3);text-decoration:none;}
+.dashboard-link span{color:var(--indigo);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="brand-mark">C</div>
+    <div class="brand-name">CarmaOne</div>
+  </div>
+
+  <!-- STATUS BANNER -->
+  <div class="status-banner pending" id="statusBanner">
+    <div class="sb-dot amber"></div>
+    <div id="statusText">Checking upload status...</div>
+  </div>
+
+  <!-- PIN -->
+  <div class="section-label">Your PIN</div>
+  <div class="pin-wrap">
+    <input type="password" class="pin-input" id="pinInput" maxlength="6" placeholder="Enter PIN" oninput="onPinInput(this.value)">
+    <div class="pin-name" id="pinName"></div>
+  </div>
+  <div class="pin-err" id="pinErr">Incorrect PIN. Please try again.</div>
+
+  <!-- DROP ZONE -->
+  <div class="section-label">Excel File</div>
+  <div class="drop-zone locked" id="dropZone" onclick="onDropClick()">
+    <div class="drop-icon">📊</div>
+    <div class="drop-title">Drop Excel file here</div>
+    <div class="drop-sub">Enter PIN first · .xlsx only</div>
+  </div>
+
+  <div class="file-tag" id="fileTag"></div>
+  <input type="file" id="fileInput" accept=".xlsx" style="display:none" onchange="onFileSelect(this.files[0])">
+
+  <button class="upload-btn" id="uploadBtn" onclick="uploadFile()" disabled>Upload & Update Dashboard</button>
+
+  <div class="feedback" id="feedback"></div>
+  <div class="val-errors" id="valErrors">
+    <div class="val-errors-title">⚠ Upload rejected — please fix these errors in Excel</div>
+    <ul id="valList"></ul>
+  </div>
+  <div class="changes-box" id="changesBox">
+    <div class="changes-title">✓ Changes detected in this upload</div>
+    <ul id="changesList"></ul>
+  </div>
+
+  <a href="https://tarun1-1.github.io/MIS-Dashboard/" class="dashboard-link" target="_blank">
+    View dashboard → <span>tarun1-1.github.io/MIS-Dashboard</span>
+  </a>
+</div>
+
+<script>
+const BACKEND    = 'https://mis-backend-python.onrender.com';
+const UPLOAD_URL = BACKEND + '/upload';
+const STATUS_URL = BACKEND + '/status';
+
+let selectedFile = null;
+let verifiedPin  = '';
+
+// ── Load status on page open ──
+async function loadStatus() {
+  try {
+    const res  = await fetch(STATUS_URL + '?t=' + Date.now());
+    const data = await res.json();
+    const banner = document.getElementById('statusBanner');
+    const text   = document.getElementById('statusText');
+    if (data.uploaded) {
+      banner.className = 'status-banner uploaded';
+      banner.querySelector('.sb-dot').className = 'sb-dot green';
+      text.textContent = `Last uploaded by ${data.uploadedBy} on ${data.generated}`;
+    } else {
+      banner.className = 'status-banner pending';
+      banner.querySelector('.sb-dot').className = 'sb-dot amber';
+      text.textContent = 'Not uploaded yet today — dashboard may show stale data';
+    }
+  } catch(e) {
+    document.getElementById('statusText').textContent = 'Could not reach server';
+  }
+}
+loadStatus();
+
+// ── PIN handling ──
+const VALID_PINS = { '1212': 'Tarun', '7890': 'Dipanshu' };
+
+function onPinInput(val) {
+  const name = VALID_PINS[val];
+  const input = document.getElementById('pinInput');
+  const nameEl = document.getElementById('pinName');
+  const errEl  = document.getElementById('pinErr');
+  const dz     = document.getElementById('dropZone');
+
+  if (name) {
+    input.className = 'pin-input valid';
+    nameEl.textContent = '✓ ' + name;
+    errEl.style.display = 'none';
+    verifiedPin = val;
+    dz.classList.remove('locked');
+    dz.querySelector('.drop-sub').textContent = 'or click to browse · .xlsx only';
+    checkUploadReady();
+  } else if (val.length >= 4) {
+    input.className = 'pin-input invalid';
+    nameEl.textContent = '';
+    errEl.style.display = 'block';
+    verifiedPin = '';
+    dz.classList.add('locked');
+    dz.querySelector('.drop-sub').textContent = 'Enter PIN first · .xlsx only';
+    document.getElementById('uploadBtn').disabled = true;
+  } else {
+    input.className = 'pin-input';
+    nameEl.textContent = '';
+    errEl.style.display = 'none';
+    verifiedPin = '';
+    dz.classList.add('locked');
+  }
+}
+
+// ── Drop zone ──
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); if(verifiedPin) dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  if (!verifiedPin) return;
+  if (e.dataTransfer.files[0]) onFileSelect(e.dataTransfer.files[0]);
+});
+
+function onDropClick() {
+  if (!verifiedPin) return;
+  document.getElementById('fileInput').click();
+}
+
+function onFileSelect(file) {
+  if (!file.name.endsWith('.xlsx')) {
+    showFeedback('Only .xlsx files are allowed', 'error');
+    return;
+  }
+  selectedFile = file;
+  const tag = document.getElementById('fileTag');
+  tag.textContent = '📎 ' + file.name + '  ·  ' + (file.size/1024).toFixed(1) + ' KB';
+  tag.style.display = 'block';
+  dz.querySelector('.drop-icon').textContent = '✅';
+  dz.querySelector('.drop-title').textContent = file.name;
+  dz.querySelector('.drop-sub').textContent   = 'Ready to upload';
+  dz.style.borderColor = '#059669';
+  dz.style.background  = 'var(--emerald-light)';
+  hideFeedback();
+  hideErrors();
+  checkUploadReady();
+}
+
+function checkUploadReady() {
+  document.getElementById('uploadBtn').disabled = !(verifiedPin && selectedFile);
+}
+
+// ── Upload ──
+async function uploadFile() {
+  if (!verifiedPin || !selectedFile) return;
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Uploading...';
+  showFeedback('Uploading and validating...', 'loading');
+  hideErrors();
+  document.getElementById('changesBox').style.display = 'none';
+
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+  formData.append('pin', verifiedPin);
+
+  try {
+    const res  = await fetch(UPLOAD_URL, { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (res.status === 422 && data.validationErrors) {
+      // Validation failed
+      showFeedback('Upload rejected — data errors found. See details below.', 'error');
+      showValidationErrors(data.validationErrors);
+      btn.disabled = false;
+      btn.textContent = 'Upload & Update Dashboard';
+      return;
+    }
+
+    if (res.ok && data.success) {
+      showFeedback('✓ Uploaded successfully! Dashboard updated for everyone.', 'success');
+      btn.textContent = '✓ Uploaded';
+
+      // Show what changed
+      if (data.changes && data.changes.length) {
+        showChanges(data.changes);
+      }
+
+      // Refresh status banner
+      loadStatus();
+      resetDropZone();
+      selectedFile = null;
+    } else {
+      throw new Error(data.error || 'Upload failed');
+    }
+  } catch(e) {
+    showFeedback('✗ ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Upload & Update Dashboard';
+  }
+}
+
+function resetDropZone() {
+  dz.querySelector('.drop-icon').textContent = '📊';
+  dz.querySelector('.drop-title').textContent = 'Drop Excel file here';
+  dz.querySelector('.drop-sub').textContent   = 'or click to browse · .xlsx only';
+  dz.style.borderColor = '';
+  dz.style.background  = '';
+  document.getElementById('fileTag').style.display = 'none';
+  document.getElementById('uploadBtn').textContent = 'Upload & Update Dashboard';
+  checkUploadReady();
+}
+
+function showFeedback(msg, type) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg;
+  el.className = 'feedback ' + type;
+  el.style.display = 'block';
+}
+function hideFeedback() { document.getElementById('feedback').style.display = 'none'; }
+
+function showValidationErrors(errors) {
+  const box  = document.getElementById('valErrors');
+  const list = document.getElementById('valList');
+  list.innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+  box.style.display = 'block';
+}
+function hideErrors() { document.getElementById('valErrors').style.display = 'none'; }
+
+function showChanges(changes) {
+  const box  = document.getElementById('changesBox');
+  const list = document.getElementById('changesList');
+  list.innerHTML = changes.map(c => `<li>${c}</li>`).join('');
+  box.style.display = 'block';
+}
+</script>
+</body>
+</html>
