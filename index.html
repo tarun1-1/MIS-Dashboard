@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CarmaOne — AI Sales Tele Calling MIS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#eef0fb; --bg2:#ffffff; --bg3:#e4e7f5;
+  --border:#d2d6ec; --border2:#bcc2e0;
+  --text:#111428; --text2:#454a6b; --text3:#8f95b8;
+  --indigo:#4353ff; --indigo-light:#eceeff; --indigo-mid:#b8bdff;
+  --violet:#7c3aed; --violet-light:#f0ebff;
+  --teal:#0891b2; --teal-light:#ddf4fa;
+  --emerald:#059669; --emerald-light:#dcf5ed;
+  --amber:#d97706; --amber-light:#fef3c7;
+  --rose:#e11d48; --rose-light:#fde8ee;
+  --coral:#f97316; --coral-light:#fff0e6;
+  --shadow:0 1px 4px rgba(30,40,120,0.07),0 4px 20px rgba(30,40,120,0.05);
+  --shadow-lg:0 6px 32px rgba(30,40,120,0.13);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased;}
+#loadingScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:linear-gradient(140deg,#e8ebff 0%,#f3eeff 50%,#e0f4ff 100%);}
+.spinner{width:40px;height:40px;border:3px solid var(--indigo-light);border-top-color:var(--indigo);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-brand{display:flex;align-items:center;gap:10px;}
+.brand-mark-lg{width:44px;height:44px;background:linear-gradient(135deg,var(--indigo),var(--violet));border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;box-shadow:0 4px 16px rgba(67,83,255,0.35);}
+.brand-name-lg{font-size:24px;font-weight:700;color:var(--text);}
+.loading-text{font-size:13px;color:var(--text3);}
+.upload-cta{background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;border:none;padding:11px 28px;border-radius:9px;font-size:13px;font-family:'Sora',sans-serif;font-weight:600;cursor:pointer;}
+#dashboard{display:none;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,40,120,0.06);}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.tb-mark{width:28px;height:28px;background:linear-gradient(135deg,var(--indigo),var(--violet));border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;}
+.tb-name{font-size:14px;font-weight:700;color:var(--text);}
+.tb-divider{width:1px;height:18px;background:var(--border2);margin:0 14px;}
+.tb-title{font-size:13px;color:var(--text2);}
+.view-tabs{display:flex;background:var(--bg3);border-radius:8px;padding:3px;gap:2px;}
+.view-tab{padding:6px 18px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);border:none;background:none;font-family:'Sora',sans-serif;transition:all 0.15s;}
+.view-tab.active{background:var(--bg2);color:var(--indigo);box-shadow:0 1px 4px rgba(30,40,120,0.1);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.tb-btn{font-size:12px;color:var(--text2);background:none;border:1px solid var(--border2);border-radius:7px;padding:6px 14px;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.15s;}
+.tb-btn:hover{color:var(--indigo);border-color:var(--indigo);}
+.tb-btn.danger{color:var(--rose);border-color:var(--rose);}
+.last-updated{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:5px 10px;border-radius:6px;}
+.content{padding:28px 32px;max-width:1440px;margin:0 auto;}
+.view-panel{display:none;animation:fadeIn 0.25s ease;}
+.view-panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.period-toggle{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap;}
+.ptab{padding:7px 18px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-family:'Sora',sans-serif;transition:all 0.15s;}
+.ptab.active{background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;border-color:transparent;box-shadow:0 3px 12px rgba(67,83,255,0.28);}
+.stage-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;margin-top:32px;}
+.stage-pill{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:4px 12px;border-radius:20px;}
+.sp-ai{background:var(--indigo-light);color:var(--indigo);}
+.sp-tele{background:var(--emerald-light);color:var(--emerald);}
+.sp-direct{background:var(--teal-light);color:var(--teal);}
+.sp-pipeline{background:var(--amber-light);color:var(--amber);}
+.stage-title{font-size:16px;font-weight:600;color:var(--text);}
+.stage-sub{font-size:12px;color:var(--text3);margin-left:auto;font-family:'JetBrains Mono',monospace;}
+.metric-grid{display:grid;gap:10px;margin-bottom:4px;}
+.g3{grid-template-columns:repeat(3,1fr);}
+.g4{grid-template-columns:repeat(4,1fr);}
+.g5{grid-template-columns:repeat(5,1fr);}
+.g6{grid-template-columns:repeat(6,1fr);}
+@media(max-width:1200px){.g6,.g5{grid-template-columns:repeat(3,1fr);}.g4{grid-template-columns:repeat(2,1fr);}.g3{grid-template-columns:repeat(2,1fr);}}
+.mc{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);border-top:3px solid var(--border);}
+.mc.t-indigo{border-top-color:var(--indigo);}.mc.t-violet{border-top-color:var(--violet);}
+.mc.t-teal{border-top-color:var(--teal);}.mc.t-emerald{border-top-color:var(--emerald);}
+.mc.t-amber{border-top-color:var(--amber);}.mc.t-rose{border-top-color:var(--rose);}
+.mc.t-coral{border-top-color:var(--coral);}.mc.t-gray{border-top-color:var(--border2);}
+.mc-lbl{font-size:11px;color:var(--text3);margin-bottom:8px;}
+.mc-val{font-size:26px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;line-height:1;}
+.mc-pct{font-size:12px;margin-top:6px;font-family:'JetBrains Mono',monospace;font-weight:500;}
+.mc-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+.p-indigo{color:var(--indigo);}.p-violet{color:var(--violet);}.p-teal{color:var(--teal);}
+.p-emerald{color:var(--emerald);}.p-amber{color:var(--amber);}.p-rose{color:var(--rose);}
+.p-coral{color:var(--coral);}.p-gray{color:var(--text3);}
+.two-col{display:flex;gap:14px;flex-wrap:wrap;}
+.two-col > *{flex:1;min-width:260px;}
+.th-cell{padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text3);background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;}
+.src-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+.src-tab{padding:6px 14px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-family:'Sora',sans-serif;transition:all 0.15s;}
+.src-tab:hover{border-color:var(--indigo);color:var(--indigo);}
+.src-tab.src-active{background:linear-gradient(135deg,var(--indigo),var(--violet));color:#fff;border-color:transparent;}
+.conv-chain{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin:32px 0 0;box-shadow:var(--shadow);overflow-x:auto;}
+.conv-chain-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.conv-chain-title::before{content:'';width:4px;height:16px;background:linear-gradient(180deg,var(--indigo),var(--violet));border-radius:2px;}
+.chain-row{display:flex;align-items:center;gap:2px;min-width:800px;}
+.chain-node{flex:1;}
+.chain-box{border-radius:12px;padding:14px 8px;text-align:center;border:1px solid var(--border);}
+.cn-indigo{background:var(--indigo-light);border-color:var(--indigo-mid);}
+.cn-teal{background:var(--teal-light);border-color:#a8dff0;}
+.cn-violet{background:var(--violet-light);border-color:#d5b8ff;}
+.cn-emerald{background:var(--emerald-light);border-color:#a8dfc8;}
+.cn-amber{background:var(--amber-light);border-color:#f5d88a;}
+.cn-coral{background:var(--coral-light);border-color:#fdc898;}
+.cn-rose{background:var(--rose-light);border-color:#f8adc4;}
+.chain-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;color:var(--text2);}
+.chain-value{font-size:17px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);}
+.chain-arr-v2{display:flex;flex-direction:column;align-items:center;padding:0 3px;gap:2px;flex-shrink:0;}
+.chain-arr{font-size:14px;color:var(--text3);}
+.chain-conv{font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.c-good{color:var(--emerald);}.c-ok{color:var(--amber);}.c-low{color:var(--rose);}
+.month-section{background:var(--bg2);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.month-header{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;transition:background 0.15s;user-select:none;}
+.month-header:hover{background:var(--bg3);}
+.month-title{font-size:14px;font-weight:600;color:var(--text);}
+.month-stats{font-size:12px;color:var(--text3);margin-left:auto;}
+.month-chevron{font-size:14px;color:var(--text3);transition:transform 0.2s;margin-left:8px;}
+.month-body{border-top:1px solid var(--border);}
+.dw-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg3);overflow-x:auto;}
+.dw-tab{padding:10px 20px;font-size:12px;font-weight:500;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Sora',sans-serif;white-space:nowrap;transition:all 0.15s;}
+.dw-tab:hover{color:var(--indigo);}
+.dw-tab-active{color:var(--indigo);border-bottom-color:var(--indigo);background:var(--bg2);font-weight:600;}
+.dw-panels{background:var(--bg2);}
+.dw-panel{display:none;}
+.dw-panel-active{display:block;}
+.dw-table{width:100%;border-collapse:collapse;font-size:11px;}
+.dw-table th{padding:7px 10px;font-size:9px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text3);background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;text-align:right;}
+.dw-table th:first-child{text-align:left;}
+.dw-table td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);}
+.dw-table td:first-child{text-align:left;font-family:'Sora',sans-serif;color:var(--text2);font-weight:500;}
+.dw-table tbody tr:hover{background:var(--bg3);}
+.dw-table .dw-week-hdr td{background:var(--bg3);font-family:'Sora',sans-serif!important;font-size:10px!important;font-weight:700!important;color:var(--text3)!important;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;}
+.dw-table .dw-total-row td{background:var(--violet-light);font-weight:700;color:var(--violet)!important;border-top:2px solid var(--indigo-mid);}
+.dw-table .dw-section-hdr td{background:var(--indigo-light);font-family:'Sora',sans-serif!important;font-size:9px!important;font-weight:700!important;color:var(--indigo)!important;text-transform:uppercase;letter-spacing:0.1em;padding:5px 10px!important;}
+.dash-footer{margin-top:36px;padding:20px 0;border-top:1px solid var(--border);font-size:11px;color:var(--text3);display:flex;justify-content:space-between;}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="loading-brand">
+    <div class="brand-mark-lg">C</div>
+    <div class="brand-name-lg">CarmaOne</div>
+  </div>
+  <div class="spinner"></div>
+  <div class="loading-text">Connecting to server...</div>
+  <div id="errorBox" style="display:none;flex-direction:column;align-items:center;gap:14px;padding:28px 32px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;max-width:420px;text-align:center;">
+    <div style="font-size:32px;">☕</div>
+    <div style="font-size:14px;font-weight:600;color:var(--text);">Dashboard is loading</div>
+    <div style="font-size:12px;color:var(--text3);line-height:1.7;">The server is starting up. Please wait 30 seconds and click refresh.</div>
+    <button class="upload-cta" onclick="fetchData()">↺ Try again</button>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="tb-mark">C</div>
+      <div class="tb-name">CarmaOne</div>
+      <div class="tb-divider"></div>
+      <div class="tb-title">AI Sales Tele Calling MIS</div>
+    </div>
+    <div class="view-tabs">
+      <button class="view-tab active" onclick="switchView('main',this)">Dashboard</button>
+      <button class="view-tab" onclick="switchView('daywise',this)">Day-wise View</button>
+      <button class="view-tab" onclick="switchView('audit',this);loadAudit()">Audit Trail</button>
+    </div>
+    <div class="topbar-right">
+      <div class="last-updated" id="lastUpdated">—</div>
+      <span id="freshDot" style="width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;margin-left:2px;"></span>
+      <button class="tb-btn" onclick="fetchData()">↺ Refresh</button>
+      <button class="tb-btn danger" onclick="window.open('upload.html','_blank')">↑ New file</button>
+    </div>
+  </div>
+  <div class="content">
+    <div id="view-main"  class="view-panel active"></div>
+    <div id="view-daywise" class="view-panel"></div>
+    <div id="view-audit"   class="view-panel"></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://mis-backend-python.onrender.com/data';
+let G = null, loadT2;
+let s3SrcFilter = 'all', s3Mode = 'count';
+let auditLoaded = false;
+
+window.addEventListener('load', fetchData);
+
+function setLoadingMsg(m) { document.querySelector('.loading-text').textContent = m; }
+
+async function fetchWithRetry(url, retries=4) {
+  for (let i=0; i<retries; i++) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 15000);
+      const res = await fetch(url, {signal: ctrl.signal});
+      clearTimeout(t);
+      if (!res.ok) throw new Error('Bad response');
+      const lu = res.headers.get('Last-Updated');
+      if (lu) document.getElementById('lastUpdated').textContent = 'Last uploaded: ' + lu;
+      return await res.json();
+    } catch(e) {
+      if (i < retries-1) {
+        setLoadingMsg('Server waking up... attempt ' + (i+2) + ' of ' + retries);
+        await new Promise(r => setTimeout(r, 3000 + i*2000));
+      }
+    }
+  }
+  throw new Error('All retries failed');
+}
+
+async function fetchData() {
+  document.getElementById('loadingScreen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('errorBox').style.display = 'none';
+  setLoadingMsg('Connecting to server...');
+  clearTimeout(loadT2);
+  loadT2 = setTimeout(() => setLoadingMsg('Waking server, please wait...'), 4000);
+  try {
+    const data = await fetchWithRetry(API + '?t=' + Date.now(), 4);
+    clearTimeout(loadT2);
+    G = data;
+    try { localStorage.setItem('carmaone_mis', JSON.stringify(data)); } catch(e) {}
+    showDashboard();
+  } catch(err) {
+    clearTimeout(loadT2);
+    const cached = localStorage.getItem('carmaone_mis');
+    if (cached) {
+      try { G = JSON.parse(cached); setTimeout(showDashboard, 400); return; } catch(e) {}
+    }
+    setLoadingMsg('Server is starting up — please wait...');
+    setTimeout(() => document.getElementById('errorBox').style.display='flex', 3000);
+    setTimeout(() => { document.getElementById('errorBox').style.display='none'; fetchData(); }, 35000);
+  }
+}
+
+function showDashboard() {
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  const ts = G.generated || '';
+  if (ts) document.getElementById('lastUpdated').textContent = 'Last uploaded: ' + ts;
+  const dot = document.getElementById('freshDot');
+  const todayD = new Date().getDate();
+  dot.style.background = (ts && ts.includes(' '+todayD+' ')) ? '#059669' : '#e11d48';
+  renderMain('mtd');
+  renderDaywise();
+}
+
+// ── UTILS ──
+const fmt  = n => (parseInt(n)||0).toLocaleString('en-IN');
+const fmtD = n => (parseFloat(n)||0).toFixed(1)+'%';
+const pct  = (n,d) => (!d||d===0)?'—':((n/d)*100).toFixed(1)+'%';
+const pctN = (n,d) => (!d||d===0)?0:(n/d)*100;
+
+function fmtSec(sec) {
+  if (!sec || sec===0) return '—';
+  sec = Math.round(sec);
+  if (sec<60) return sec+'s';
+  const m=Math.floor(sec/60), s=sec%60;
+  if (m<60) return m+'m'+(s?' '+s+'s':'');
+  return Math.floor(m/60)+'h '+(m%60)+'m';
+}
+function fmtAmt(cr) {
+  if (!cr || cr===0) return '—';
+  if (cr<1) return '₹'+Math.round(cr*100)+'L';
+  return '₹'+cr.toFixed(1)+'Cr';
+}
+function cleanAgent(name) {
+  return (name||'Unknown').replace(/_Jarvis$/i,'').replace(/_/g,' ')
+    .split(' ').map(w=>w?w[0].toUpperCase()+w.slice(1).toLowerCase():'').join(' ').trim();
+}
+
+const DISPO_META = {
+  'INTERESTED':               ['#059669','#dcf5ed'],
+  'CALL BACK':                ['#4353ff','#eceeff'],
+  'PITCH INCOMPLETE':         ['#d97706','#fef3c7'],
+  'NOT INTERESTED':           ['#e11d48','#fde8ee'],
+  'NO MEANINGFUL CONNECT':    ['#7c3aed','#f0ebff'],
+  'WRONG NUMBER':             ['#64748b','#f1f5f9'],
+  'DO NOT CALL':              ['#64748b','#f1f5f9'],
+  'NOT ELIGIBLE':             ['#64748b','#f1f5f9'],
+  'NO ANSWER':                ['#9ca3af','#f9fafb'],
+  'NUMBER BUSY':              ['#9ca3af','#f9fafb'],
+  'SWITCHED OFF':             ['#9ca3af','#f9fafb'],
+  'DUPLICATE LEAD':           ['#9ca3af','#f9fafb'],
+  'BLANK':                    ['#d1d5db','#f9fafb'],
+};
+const DISPO_ORDER = ['INTERESTED','CALL BACK','PITCH INCOMPLETE','NOT INTERESTED',
+  'NO MEANINGFUL CONNECT','WRONG NUMBER','DO NOT CALL','NOT ELIGIBLE',
+  'NO ANSWER','NUMBER BUSY','SWITCHED OFF','DUPLICATE LEAD','BLANK'];
+const STATUS_META = {
+  'Disbursed':     ['#059669','#dcf5ed'],
+  'Sanctioned':    ['#4353ff','#eceeff'],
+  'Credit Review': ['#7c3aed','#f0ebff'],
+  'Login':         ['#0891b2','#ddf4fa'],
+  'Login Pending': ['#d97706','#fef3c7'],
+  'Hold':          ['#f97316','#fff0e6'],
+  'Case Dropped':  ['#6b7280','#f3f4f6'],
+  'Rejected':      ['#e11d48','#fde8ee'],
+};
+
+function dispoBadge(d) {
+  const m=DISPO_META[d]||['#6b7280','#f3f4f6'];
+  return `<span style="color:${m[0]};background:${m[1]};padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap;">${d||'—'}</span>`;
+}
+function statusBadge(s) {
+  const m=STATUS_META[s]||['#6b7280','#f3f4f6'];
+  return `<span style="color:${m[0]};background:${m[1]};padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;">${s||'—'}</span>`;
+}
+function thCell(label, align='right') {
+  return `<th class="th-cell" style="text-align:${align};">${label}</th>`;
+}
+
+// ── RENDER MAIN ──
+function renderMain(which) {
+  const a  = which==='mtd' ? G.ai?.mtd        : G.ai?.lastDay;
+  const h  = which==='mtd' ? G.handoff?.mtd   : G.handoff?.lastDay;
+  const dm = which==='mtd' ? G.dialerManual?.mtd : G.dialerManual?.lastDay;
+  const rows = G.pipeline?.rows || [];
+  const lastLabel = G.ai?.lastDay?.label || 'Last Day';
+
+  document.getElementById('view-main').innerHTML = `
+    <div class="period-toggle">
+      <button class="ptab ${which==='mtd'?'active':''}" onclick="renderMain('mtd')">📅 MTD</button>
+      <button class="ptab ${which==='last'?'active':''}" onclick="renderMain('last')">📆 ${lastLabel}</button>
+    </div>
+    ${renderS1(a, which)}
+    ${renderS2A(h)}
+    ${renderS2B(dm)}
+    ${renderS3HTML(rows)}
+    ${renderChain(a, h, rows)}
+    <div class="dash-footer">
+      <span>CarmaOne — AI Sales Tele Calling MIS &nbsp;·&nbsp; Confidential</span>
+      <span>Generated ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</span>
+    </div>`;
+}
+
+// ── STAGE 1: AI AUTO-CALLING ──
+function renderS1(a, period) {
+  if (!a) return '<div style="padding:30px;text-align:center;color:var(--text3);">No AI data for this period</div>';
+
+  // Merge NMC + NMConversation into one
+  const dispos = {...(a.dispositions||{})};
+  const nmc   = dispos['NO MEANINGFUL CONTACT']     || {dials:0,connects:0,talk_time_sec:0};
+  const nmconv= dispos['NO MEANINGFUL CONVERSATION']|| {dials:0,connects:0,talk_time_sec:0};
+  if (nmc.dials > 0 || nmconv.dials > 0) {
+    const merged = {
+      dials:         nmc.dials + nmconv.dials,
+      connects:      nmc.connects + nmconv.connects,
+      talk_time_sec: nmc.talk_time_sec + nmconv.talk_time_sec,
+    };
+    merged.aht_sec = merged.connects > 0 ? merged.talk_time_sec / merged.connects : 0;
+    dispos['NO MEANINGFUL CONNECT'] = merged;
+    delete dispos['NO MEANINGFUL CONTACT'];
+    delete dispos['NO MEANINGFUL CONVERSATION'];
+  }
+
+  const prod = (dispos['INTERESTED']?.dials||0) + (dispos['CALL BACK']?.dials||0);
+  const nmc_total = dispos['NO MEANINGFUL CONNECT']?.connects || 0;
+  const notReach  = (dispos['NO ANSWER']?.dials||0)+(dispos['NUMBER BUSY']?.dials||0)+(dispos['SWITCHED OFF']?.dials||0);
+
+  // Sort dispositions
+  const sortedDispos = Object.entries(dispos).sort(([da],[db])=>{
+    const ai=DISPO_ORDER.indexOf(da), bi=DISPO_ORDER.indexOf(db);
+    return (ai<0?99:ai)-(bi<0?99:bi);
+  });
+
+  // Simplified table — Disposition | Dials | % of Total | Avg Talk
+  const dRows = sortedDispos.map(([d,s])=>`
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:7px 12px;">${dispoBadge(d)}</td>
+      <td style="padding:7px 12px;text-align:right;font-weight:600;font-size:13px;">${fmt(s.dials)}</td>
+      <td style="padding:7px 12px;text-align:right;color:var(--text3);font-size:11px;">${pct(s.dials,a.total_dials)}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;">${fmtSec(s.aht_sec)}</td>
+    </tr>`).join('');
+
+  // Unique leads card only for last day (MTD double-counts across days)
+  const uniqueCard = period !== 'mtd'
+    ? `<div class="mc"><div class="mc-lbl">Unique Leads</div><div class="mc-val">${fmt(a.unique_leads)}</div><div class="mc-sub">Uploaded for dialling</div></div>`
+    : `<div class="mc t-gray"><div class="mc-lbl">Unique Leads</div><div class="mc-val" style="font-size:16px;color:var(--text3);">MTD N/A</div><div class="mc-sub">Per-day count only</div></div>`;
+
+  return `
+    <div class="stage-header" style="margin-top:0;">
+      <div class="stage-pill sp-ai">Stage 1</div>
+      <div class="stage-title">AI Auto-Calling</div>
+      <div class="stage-sub">${fmt(a.total_dials)} total dials</div>
+    </div>
+
+    <div class="metric-grid g4" style="margin-bottom:10px;">
+      ${uniqueCard}
+      <div class="mc"><div class="mc-lbl">Total Dials</div><div class="mc-val">${fmt(a.total_dials)}</div><div class="mc-sub">Auto-dial attempts</div></div>
+      <div class="mc t-emerald"><div class="mc-lbl">AI Connected</div><div class="mc-val">${fmt(a.connected)}</div><div class="mc-pct p-emerald">${pct(a.connected,a.total_dials)} connect rate</div></div>
+      <div class="mc t-indigo"><div class="mc-lbl">AI Productive</div><div class="mc-val">${fmt(prod)}</div><div class="mc-pct p-indigo">${pct(prod,a.connected)} of connected</div></div>
+    </div>
+
+    <div class="metric-grid g3" style="margin-bottom:14px;">
+      <div class="mc t-emerald"><div class="mc-lbl">Productive Rate</div><div class="mc-val">${fmtD(pctN(prod,a.connected))}</div><div class="mc-sub">Interested + CB of connected</div></div>
+      <div class="mc t-violet"><div class="mc-lbl">No Conversation Rate</div><div class="mc-val">${fmtD(pctN(nmc_total,a.connected))}</div><div class="mc-sub">NMC of connected</div></div>
+      <div class="mc t-gray"><div class="mc-lbl">Not Reachable Rate</div><div class="mc-val">${fmtD(pctN(notReach,a.total_dials))}</div><div class="mc-sub">No ans + busy + switched off</div></div>
+    </div>
+
+    <div style="overflow-x:auto;background:var(--bg2);border:1px solid var(--border);border-radius:10px;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr>
+          <th class="th-cell" style="text-align:left;">Disposition</th>
+          ${thCell('Dials')}${thCell('% of Total')}${thCell('Avg Talk')}
+        </tr></thead>
+        <tbody>${dRows}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── STAGE 2A: HANDOFF ──
+function renderS2A(h) {
+  if (!h) return `<div class="stage-header"><div class="stage-pill sp-tele">Stage 2A</div><div class="stage-title">Tele on AI Handoff</div></div><div style="padding:20px;color:var(--text3);font-size:12px;">No handoff data for this period</div>`;
+  const total = (h.interested||0)+(h.callback||0);
+  return `
+    <div class="stage-header">
+      <div class="stage-pill sp-tele">Stage 2A</div>
+      <div class="stage-title">Tele on AI Handoff</div>
+      <div class="stage-sub">Leads handed off from AI calling</div>
+    </div>
+    <div class="metric-grid g3">
+      <div class="mc t-indigo"><div class="mc-lbl">Total Handoff</div><div class="mc-val">${fmt(total)}</div><div class="mc-sub">AI leads passed to tele team</div></div>
+      <div class="mc t-emerald"><div class="mc-lbl">AI Interested</div><div class="mc-val">${fmt(h.interested||0)}</div><div class="mc-pct p-emerald">${pct(h.interested,total)} of handoff</div></div>
+      <div class="mc t-violet"><div class="mc-lbl">AI Callback</div><div class="mc-val">${fmt(h.callback||0)}</div><div class="mc-pct p-violet">${pct(h.callback,total)} of handoff</div></div>
+    </div>`;
+}
+
+// ── STAGE 2B: DIRECT TELE ──
+function renderS2B(dm) {
+  if (!dm) return `<div class="stage-header"><div class="stage-pill sp-direct">Stage 2B</div><div class="stage-title">Direct Tele Calling</div></div><div style="padding:20px;color:var(--text3);font-size:12px;">No direct tele data for this period</div>`;
+  const dispRows = Object.entries(dm.dispositions||{}).sort(([,a],[,b])=>b-a)
+    .map(([d,cnt])=>`
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:6px 12px;">${dispoBadge(d)}</td>
+        <td style="padding:6px 12px;text-align:right;font-weight:600;">${fmt(cnt)}</td>
+        <td style="padding:6px 12px;text-align:right;color:var(--text3);font-size:11px;">${pct(cnt,dm.total_dials)}</td>
+      </tr>`).join('');
+  const agentRows = Object.entries(dm.agents||{}).sort(([,a],[,b])=>b.dials-a.dials)
+    .map(([ag,s])=>{
+      const topD=Object.entries(s.dispositions||{}).sort(([,a],[,b])=>b-a)[0];
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:7px 12px;font-weight:500;">${cleanAgent(ag)}</td>
+        <td style="padding:7px 12px;text-align:right;">${fmt(s.dials)}</td>
+        <td style="padding:7px 12px;text-align:right;color:var(--emerald);font-weight:600;">${fmt(s.connected)}</td>
+        <td style="padding:7px 12px;text-align:right;color:var(--text3);font-size:11px;">${pct(s.connected,s.dials)}</td>
+        <td style="padding:7px 12px;font-size:10px;color:var(--text3);">${topD?topD[0]+' ('+topD[1]+')':'—'}</td>
+      </tr>`;}).join('');
+  return `
+    <div class="stage-header">
+      <div class="stage-pill sp-direct">Stage 2B</div>
+      <div class="stage-title">Direct Tele Calling</div>
+      <div class="stage-sub">Manual dialling — separate from AI flow</div>
+    </div>
+    <div class="metric-grid g3">
+      <div class="mc"><div class="mc-lbl">Total Dials</div><div class="mc-val">${fmt(dm.total_dials)}</div><div class="mc-sub">Manual calls made</div></div>
+      <div class="mc t-emerald"><div class="mc-lbl">Connected</div><div class="mc-val">${fmt(dm.connected)}</div><div class="mc-pct p-emerald">${pct(dm.connected,dm.total_dials)} connect rate</div></div>
+      <div class="mc t-rose"><div class="mc-lbl">Not Connected</div><div class="mc-val">${fmt((dm.total_dials||0)-(dm.connected||0))}</div><div class="mc-pct p-rose">${pct((dm.total_dials||0)-(dm.connected||0),dm.total_dials)}</div></div>
+    </div>
+    <div class="two-col" style="margin-top:12px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div style="padding:9px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;background:var(--bg3);border-bottom:1px solid var(--border);">Dispositions</div>
+        <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr><th class="th-cell" style="text-align:left;">Disposition</th>${thCell('Count')}${thCell('%')}</tr></thead>
+          <tbody>${dispRows}</tbody>
+        </table></div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div style="padding:9px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;background:var(--bg3);border-bottom:1px solid var(--border);">Agent Performance</div>
+        <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr><th class="th-cell" style="text-align:left;">Agent</th>${thCell('Dials')}${thCell('Conn.')}${thCell('Conn.%')}<th class="th-cell" style="text-align:left;">Top Disposition</th></tr></thead>
+          <tbody>${agentRows}</tbody>
+        </table></div>
+      </div>
+    </div>`;
+}
+
+// ── STAGE 3: PIPELINE ──
+function renderS3HTML(rows) {
+  const srcOptions = [
+    {key:'all', label:'All Sources'},
+    {key:'ai calling', label:'AI Calling'},
+    {key:'existing customer', label:'Existing Customer'},
+    {key:'cold call', label:'Cold Call'},
+  ];
+  const srcTabs = srcOptions.map(o=>
+    `<button class="src-tab ${s3SrcFilter===o.key?'src-active':''}" onclick="setS3Filter('${o.key}')">${o.label}</button>`
+  ).join('');
+  const modeTabs = `
+    <button class="src-tab ${s3Mode==='count'?'src-active':''}" onclick="setS3Mode('count')">Count</button>
+    <button class="src-tab ${s3Mode==='amount'?'src-active':''}" onclick="setS3Mode('amount')">₹ Amount</button>`;
+  return `
+    <div class="stage-header">
+      <div class="stage-pill sp-pipeline">Stage 3</div>
+      <div class="stage-title">Loan Pipeline</div>
+      <div class="stage-sub">${rows.length} entries · cumulative</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+      <div class="src-tabs">${srcTabs}</div>
+      <div class="src-tabs">${modeTabs}</div>
+    </div>
+    <div id="s3-content">${buildS3Content(rows)}</div>`;
+}
+
+function setS3Filter(f) { s3SrcFilter=f; document.getElementById('s3-content').innerHTML=buildS3Content(G.pipeline?.rows||[]); }
+function setS3Mode(m)   { s3Mode=m;       document.getElementById('s3-content').innerHTML=buildS3Content(G.pipeline?.rows||[]); }
+
+function buildS3Content(rows) {
+  const filtered = s3SrcFilter==='all' ? rows :
+    rows.filter(r=>(r.lead_source||'').toLowerCase()===s3SrcFilter);
+
+  // Status summary
+  const statusMap={};
+  filtered.forEach(r=>{
+    const s=r.status||'Unknown';
+    if(!statusMap[s]) statusMap[s]={count:0,amount:0};
+    statusMap[s].count++;
+    statusMap[s].amount+=(r.expected_amount_cr||0);
+  });
+  const sOrder=['Disbursed','Sanctioned','Credit Review','Login','Login Pending','Hold','Case Dropped','Rejected'];
+  const allStatuses=[...sOrder,...Object.keys(statusMap).filter(s=>!sOrder.includes(s))].filter(s=>statusMap[s]);
+  const statusCards = allStatuses.map(s=>{
+    const d=statusMap[s];
+    const m=STATUS_META[s]||['#6b7280','#f3f4f6'];
+    const val=s3Mode==='amount'?fmtAmt(d.amount):fmt(d.count);
+    const sub=s3Mode==='amount'?`${d.count} entr${d.count===1?'y':'ies'}`:d.amount>0?fmtAmt(d.amount):'';
+    return `<div class="mc" style="border-top-color:${m[0]};">
+      <div class="mc-lbl">${s}</div>
+      <div class="mc-val" style="color:${m[0]};font-size:22px;">${val}</div>
+      ${sub?`<div class="mc-sub">${sub}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // Officer summary
+  const offMap={};
+  filtered.forEach(r=>{const o=r.officer||'Unknown';if(!offMap[o])offMap[o]={count:0,amount:0,statuses:{},amounts:{}};offMap[o].count++;offMap[o].amount+=(r.expected_amount_cr||0);offMap[o].statuses[r.status]=(offMap[o].statuses[r.status]||0)+1;offMap[o].amounts[r.status]=(offMap[o].amounts[r.status]||0)+(r.expected_amount_cr||0);});
+  const offRows = Object.entries(offMap).sort(([,a],[,b])=>b.count-a.count).map(([o,d])=>{
+    const dis=d.statuses['Disbursed']||0, san=d.statuses['Sanctioned']||0;
+    const disAmt=d.amounts['Disbursed']||0, sanAmt=d.amounts['Sanctioned']||0;
+    return `<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:7px 12px;font-weight:500;">${o}</td>
+      <td style="padding:7px 12px;text-align:right;">${fmt(d.count)}</td>
+      <td style="padding:7px 12px;text-align:right;font-size:11px;">${fmtAmt(d.amount)}</td>
+      <td style="padding:7px 12px;text-align:right;color:var(--emerald);font-weight:600;">${dis}<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px;">${disAmt>0?fmtAmt(disAmt):''}</span></td>
+      <td style="padding:7px 12px;text-align:right;color:var(--indigo);font-weight:600;">${san}<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px;">${sanAmt>0?fmtAmt(sanAmt):''}</span></td>
+      <td style="padding:7px 12px;text-align:right;color:var(--text3);font-size:11px;">${d.count-dis-san}</td>
+    </tr>`;}).join('');
+
+  // Lender summary
+  const lndMap={};
+  filtered.forEach(r=>{const l=r.lender||'TBD';if(!lndMap[l])lndMap[l]={count:0,amount:0,statuses:{},amounts:{}};lndMap[l].count++;lndMap[l].amount+=(r.expected_amount_cr||0);lndMap[l].statuses[r.status]=(lndMap[l].statuses[r.status]||0)+1;lndMap[l].amounts[r.status]=(lndMap[l].amounts[r.status]||0)+(r.expected_amount_cr||0);});
+  const lndRows = Object.entries(lndMap).sort(([,a],[,b])=>b.count-a.count).map(([l,d])=>{
+    const dis=d.statuses['Disbursed']||0, san=d.statuses['Sanctioned']||0;
+    const disAmt=d.amounts['Disbursed']||0, sanAmt=d.amounts['Sanctioned']||0;
+    return `<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:7px 12px;font-weight:500;">${l}</td>
+      <td style="padding:7px 12px;text-align:right;">${fmt(d.count)}</td>
+      <td style="padding:7px 12px;text-align:right;font-size:11px;">${fmtAmt(d.amount)}</td>
+      <td style="padding:7px 12px;text-align:right;color:var(--emerald);font-weight:600;">${dis}<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px;">${disAmt>0?fmtAmt(disAmt):''}</span></td>
+      <td style="padding:7px 12px;text-align:right;color:var(--indigo);font-weight:600;">${san}<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:4px;">${sanAmt>0?fmtAmt(sanAmt):''}</span></td>
+      <td style="padding:7px 12px;text-align:right;color:var(--text3);font-size:11px;">${d.count-dis-san}</td>
+    </tr>`;}).join('');
+
+  // Borrower grouping
+  const borMap={}, borOrder=[];
+  filtered.forEach(r=>{
+    if(!borMap[r.borrower]){borMap[r.borrower]=[];borOrder.push(r.borrower);}
+    borMap[r.borrower].push(r);
+  });
+  const borRows = borOrder.map((b,idx)=>{
+    const att=borMap[b];
+    const latSt=att[att.length-1].status;
+    const totAmt=att.reduce((s,r)=>s+(r.expected_amount_cr||0),0);
+    const sid='bor_'+idx;
+    const lDetails=att.map(a=>`
+      <tr style="border-bottom:1px solid var(--border);background:var(--bg);">
+        <td style="padding:6px 16px 6px 28px;font-size:11px;color:var(--text2);">${a.lender||'TBD'}</td>
+        <td style="padding:6px 12px;">${statusBadge(a.status)}</td>
+        <td style="padding:6px 12px;font-size:11px;color:var(--text3);">${a.officer||'—'}</td>
+        <td style="padding:6px 12px;text-align:right;font-size:11px;">${a.expected_amount_cr>0?fmtAmt(a.expected_amount_cr):'—'}</td>
+        <td style="padding:6px 12px;font-size:11px;color:var(--text3);">${a.login_date||'—'}</td>
+        <td style="padding:6px 12px;font-size:10px;color:var(--text3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(a.remarks||'').replace(/"/g,"'")}">${a.remarks||'—'}</td>
+      </tr>`).join('');
+    return `
+      <tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="toggleBorrower('${sid}')">
+        <td style="padding:8px 12px;font-weight:600;font-size:12px;">${b}</td>
+        <td style="padding:8px 12px;">${statusBadge(latSt)}</td>
+        <td style="padding:8px 12px;font-size:11px;color:var(--text3);">${att[0].lead_source||'—'}</td>
+        <td style="padding:8px 12px;font-size:11px;color:var(--text3);">${att[0].officer||'—'}</td>
+        <td style="padding:8px 12px;text-align:right;font-size:11px;">${totAmt>0?fmtAmt(totAmt):'—'}</td>
+        <td style="padding:8px 12px;font-size:11px;color:var(--indigo);text-align:center;">${att.length} lender${att.length>1?'s':''} ▾</td>
+      </tr>
+      <tr id="${sid}" style="display:none;">
+        <td colspan="6" style="padding:0;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead><tr style="background:var(--bg3);">
+              <th class="th-cell" style="text-align:left;padding-left:28px;">Lender</th>
+              <th class="th-cell" style="text-align:left;">Status</th>
+              <th class="th-cell" style="text-align:left;">Officer</th>
+              ${thCell('Amount')}<th class="th-cell" style="text-align:left;">Login Date</th>
+              <th class="th-cell" style="text-align:left;">Remarks</th>
+            </tr></thead>
+            <tbody>${lDetails}</tbody>
+          </table>
+        </td>
+      </tr>`;
+  }).join('');
+
+  const tableHdr = `<thead><tr>
+    <th class="th-cell" style="text-align:left;">Borrower</th>
+    <th class="th-cell" style="text-align:left;">Latest Status</th>
+    <th class="th-cell" style="text-align:left;">Lead Source</th>
+    <th class="th-cell" style="text-align:left;">Officer</th>
+    ${thCell('Amount')}
+    <th class="th-cell" style="text-align:center;">Lenders</th>
+  </tr></thead>`;
+
+  return `
+    <div class="metric-grid" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr));margin-bottom:16px;">${statusCards}</div>
+    <div class="two-col" style="margin-bottom:14px;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div style="padding:9px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;background:var(--bg3);border-bottom:1px solid var(--border);">Officer Summary</div>
+        <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr><th class="th-cell" style="text-align:left;">Officer</th>${thCell('Leads')}${thCell('Amount')}<th class="th-cell" style="color:var(--emerald);">Disbursed</th><th class="th-cell" style="color:var(--indigo);">Sanctioned</th>${thCell('Others')}</tr></thead>
+          <tbody>${offRows||noneRow(6)}</tbody>
+        </table></div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <div style="padding:9px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;background:var(--bg3);border-bottom:1px solid var(--border);">Lender Summary</div>
+        <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr><th class="th-cell" style="text-align:left;">Lender</th>${thCell('Leads')}${thCell('Amount')}<th class="th-cell" style="color:var(--emerald);">Disbursed</th><th class="th-cell" style="color:var(--indigo);">Sanctioned</th>${thCell('Others')}</tr></thead>
+          <tbody>${lndRows||noneRow(6)}</tbody>
+        </table></div>
+      </div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <div style="padding:9px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;background:var(--bg3);border-bottom:1px solid var(--border);">
+        Borrower Drill-Down <span style="font-weight:400;text-transform:none;letter-spacing:0;">— click any row to expand lender details</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">${tableHdr}<tbody>${borRows||noneRow(6)}</tbody></table>
+      </div>
+    </div>`;
+}
+
+function noneRow(cols) {
+  return `<tr><td colspan="${cols}" style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No entries for this filter</td></tr>`;
+}
+
+function toggleBorrower(id) {
+  const el=document.getElementById(id);
+  if(el) el.style.display=el.style.display==='none'?'table-row':'none';
+}
+
+// ── CONVERSION CHAIN ──
+function renderChain(a, h, rows) {
+  if (!a) return '';
+  const prod = (a.dispositions?.['INTERESTED']?.dials||0)+(a.dispositions?.['CALL BACK']?.dials||0);  const handoff = h ? (h.interested||0)+(h.callback||0) : 0;
+  const pipeline = rows.length;
+  const disbRows = rows.filter(r=>r.status==='Disbursed');
+  const sanRows  = rows.filter(r=>r.status==='Sanctioned');
+  const disbAmt  = disbRows.reduce((s,r)=>s+(r.expected_amount_cr||0),0);
+
+  const nodes = [
+    {label:'Unique Leads', val:a.unique_leads, cls:'cn-indigo'},
+    {label:'AI Dials',     val:a.total_dials,  cls:'cn-indigo'},
+    {label:'Connected',    val:a.connected,    cls:'cn-teal',   pctOf:a.total_dials},
+    {label:'Productive',   val:prod,            cls:'cn-violet', pctOf:a.connected},
+    {label:'Handoff',      val:handoff,         cls:'cn-emerald',pctOf:prod},
+    {label:'Pipeline',     val:pipeline,        cls:'cn-amber'},
+    {label:'Sanctioned',   val:sanRows.length,  cls:'cn-coral'},
+    {label:'Disbursed',    val:disbRows.length, cls:'cn-rose',   sub:disbAmt>0?fmtAmt(disbAmt):null},
+  ];
+
+  const chainHtml = nodes.map((n,i)=>{
+    const convCls = v => v>=30?'c-good':v>=10?'c-ok':'c-low';
+    const arrow = i<nodes.length-1 ? `
+      <div class="chain-arr-v2">
+        ${n.pctOf!==undefined?`<div class="chain-conv ${convCls(pctN(n.val,n.pctOf))}">${fmtD(pctN(n.val,n.pctOf))}</div>`:'<div style="height:14px;"></div>'}
+        <div class="chain-arr">→</div>
+      </div>` : '';
+    return `<div class="chain-node">
+      <div class="chain-box ${n.cls}">
+        <div class="chain-label">${n.label}</div>
+        <div class="chain-value">${fmt(n.val)}</div>
+        ${n.sub?`<div style="font-size:9px;color:var(--text2);margin-top:3px;">${n.sub}</div>`:''}
+      </div>
+    </div>${arrow}`;
+  }).join('');
+
+  return `
+    <div class="conv-chain">
+      <div class="conv-chain-title">End-to-end conversion chain</div>
+      <div class="chain-row">${chainHtml}</div>
+    </div>`;
+}
+
+// ── DAY-WISE VIEW ──
+function renderDaywise() {
+  const aiDays = G.ai?.allDays || [];
+  const hDays  = G.handoff?.allDays || [];
+  const dmDays = G.dialerManual?.allDays || [];
+  const el     = document.getElementById('view-daywise');
+
+  if (!aiDays.length && !hDays.length && !dmDays.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);">No day data available</div>';
+    return;
+  }
+
+  const aiMap={}, hMap={}, dmMap={};
+  aiDays.forEach(d=>aiMap[d.label]=d);
+  hDays.forEach(d=>hMap[d.label]=d);
+  dmDays.forEach(d=>dmMap[d.label]=d);
+
+  function parseD(s) {
+    try { return new Date(s.replace(/(\d+)\s+(\w+)\s+(\d+)/,'$2 $1 $3')); }
+    catch(e) { return new Date(0); }
+  }
+
+  const allLabels=[...new Set([...aiDays,...hDays,...dmDays].map(d=>d.label))].sort((a,b)=>parseD(a)-parseD(b));
+
+  // Group by month
+  const monthMap={}, monthOrder=[];
+  allLabels.forEach(lbl=>{
+    const parts=lbl.split(' ');
+    const mKey=parts.length>=3?parts[1]+' '+parts[2]:'Other';
+    if(!monthMap[mKey]){monthMap[mKey]=[];monthOrder.push(mKey);}
+    monthMap[mKey].push(lbl);
+  });
+
+  function weekNum(lbl) {
+    const d=parseInt(lbl.split(' ')[0])||1;
+    return 'Week '+Math.ceil(d/7);
+  }
+
+  function buildDayRow(lbl, isTotal=false) {
+    const ai=aiMap[lbl]||{}, h=hMap[lbl]||{}, dm=dmMap[lbl]||{};
+    const prod=(ai.dispositions?.['INTERESTED']?.dials||0)+(ai.dispositions?.['CALL BACK']?.dials||0);
+    const cls = isTotal ? 'dw-total-row' : '';
+    const display = isTotal ? lbl : lbl.split(' ')[0]+' '+lbl.split(' ')[1];
+    return `<tr class="${cls}">
+      <td>${display}</td>
+      <td>${ai.unique_leads!=null?fmt(ai.unique_leads):'—'}</td>
+      <td>${ai.total_dials!=null?fmt(ai.total_dials):'—'}</td>
+      <td>${ai.connected!=null?fmt(ai.connected):'—'}</td>
+      <td style="color:var(--text3);font-size:10px;">${ai.total_dials?pct(ai.connected,ai.total_dials):'—'}</td>
+      <td>${prod?fmt(prod):'—'}</td>
+      <td style="color:var(--text3);font-size:10px;">${ai.connected?pct(prod,ai.connected):'—'}</td>
+      <td>${h.interested!=null?fmt(h.interested):'—'}</td>
+      <td>${h.callback!=null?fmt(h.callback):'—'}</td>
+      <td>${(h.interested!=null||h.callback!=null)?fmt((h.interested||0)+(h.callback||0)):'—'}</td>
+      <td>${dm.total_dials!=null?fmt(dm.total_dials):'—'}</td>
+      <td>${dm.connected!=null?fmt(dm.connected):'—'}</td>
+      <td style="color:var(--text3);font-size:10px;">${dm.total_dials?pct(dm.connected,dm.total_dials):'—'}</td>
+    </tr>`;
+  }
+
+  function sumLabels(labels) {
+    const r={unique_leads:0,total_dials:0,connected:0,prod:0,h_int:0,h_cb:0,dm_dials:0,dm_conn:0};
+    labels.forEach(lbl=>{
+      const ai=aiMap[lbl]||{}, h=hMap[lbl]||{}, dm=dmMap[lbl]||{};
+      r.unique_leads+=(ai.unique_leads||0);
+      r.total_dials+=(ai.total_dials||0);
+      r.connected+=(ai.connected||0);
+      r.prod+=((ai.dispositions?.['INTERESTED']?.dials||0)+(ai.dispositions?.['CALL BACK']?.dials||0));
+      r.h_int+=(h.interested||0);
+      r.h_cb+=(h.callback||0);
+      r.dm_dials+=(dm.total_dials||0);
+      r.dm_conn+=(dm.connected||0);
+    });
+    return r;
+  }
+
+  const tableHead = `<thead>
+    <tr class="dw-section-hdr"><td colspan="7">Stage 1 — AI Auto-Calling</td><td colspan="3">Stage 2A — Handoff</td><td colspan="3">Stage 2B — Direct Tele</td></tr>
+    <tr>
+      <th class="th-cell" style="text-align:left;font-size:9px;">Date</th>
+      <th class="th-cell" style="font-size:9px;">Unique</th><th class="th-cell" style="font-size:9px;">Dials</th>
+      <th class="th-cell" style="font-size:9px;">Conn.</th><th class="th-cell" style="font-size:9px;">Conn%</th>
+      <th class="th-cell" style="font-size:9px;">Prod.</th><th class="th-cell" style="font-size:9px;">Prod%</th>
+      <th class="th-cell" style="font-size:9px;">Int.</th><th class="th-cell" style="font-size:9px;">CB</th><th class="th-cell" style="font-size:9px;">Total</th>
+      <th class="th-cell" style="font-size:9px;">Dials</th><th class="th-cell" style="font-size:9px;">Conn.</th><th class="th-cell" style="font-size:9px;">Conn%</th>
+    </tr>
+  </thead>`;
+
+  function buildMonthContent(mKey) {
+    const labels=monthMap[mKey];
+    const weekMap={}, weekOrder=[];
+    labels.forEach(lbl=>{const w=weekNum(lbl);if(!weekMap[w]){weekMap[w]=[];weekOrder.push(w);}weekMap[w].push(lbl);});
+
+    const mTot=sumLabels(labels);
+    const weekSections = weekOrder.map(wk=>{
+      const wLabels=weekMap[wk];
+      const wid='wk_'+mKey.replace(/\s/g,'_')+'_'+wk.replace(/\s/g,'_');
+      const dayRows=wLabels.map(l=>buildDayRow(l)).join('');
+      const wTot=sumLabels(wLabels);
+      return `
+        <tr class="dw-week-hdr" onclick="toggleM('${wid}')">
+          <td colspan="13" style="padding:6px 12px;">📋 ${wk} &nbsp;<span style="font-weight:400;color:var(--text3);">(${wLabels.length} day${wLabels.length>1?'s':''})</span>
+            <span id="${wid}_c" style="float:right;transition:transform 0.2s;">▾</span>
+          </td>
+        </tr>
+        <tr id="${wid}_body" style="display:none;"><td colspan="13" style="padding:0;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <tbody>${dayRows}</tbody>
+          </table>
+        </td></tr>`;
+    }).join('');
+
+    const totRow=`<tr class="dw-total-row">
+      <td>${mKey} Total</td>
+      <td>${fmt(mTot.unique_leads)}</td><td>${fmt(mTot.total_dials)}</td>
+      <td>${fmt(mTot.connected)}</td><td>${pct(mTot.connected,mTot.total_dials)}</td>
+      <td>${fmt(mTot.prod)}</td><td>${pct(mTot.prod,mTot.connected)}</td>
+      <td>${fmt(mTot.h_int)}</td><td>${fmt(mTot.h_cb)}</td><td>${fmt(mTot.h_int+mTot.h_cb)}</td>
+      <td>${fmt(mTot.dm_dials)}</td><td>${fmt(mTot.dm_conn)}</td><td>${pct(mTot.dm_conn,mTot.dm_dials)}</td>
+    </tr>`;
+    return weekSections + totRow;
+  }
+
+  const allTot=sumLabels(allLabels);
+  const firstMth=monthOrder[0];
+  const tabsHtml=monthOrder.map((mk,i)=>
+    `<button class="dw-tab ${i===0?'dw-tab-active':''}" onclick="switchDwTab('${mk.replace(/\s/g,'_')}',this)">${mk}</button>`
+  ).join('')+`<button class="dw-tab" onclick="switchDwTab('__yearly',this)">📆 Yearly</button>`;
+
+  const monthPanels=monthOrder.map((mk,i)=>`
+    <div class="dw-panel ${i===0?'dw-panel-active':''}" id="dwp_${mk.replace(/\s/g,'_')}">
+      <div style="overflow-x:auto;">
+        <table class="dw-table">${tableHead}<tbody>${buildMonthContent(mk)}</tbody></table>
+      </div>
+    </div>`).join('');
+
+  const yearPanel=`<div class="dw-panel" id="dwp___yearly">
+    <div style="overflow-x:auto;">
+      <table class="dw-table">${tableHead}<tbody>
+        <tr class="dw-total-row">
+          <td>Yearly Total</td>
+          <td>${fmt(allTot.unique_leads)}</td><td>${fmt(allTot.total_dials)}</td>
+          <td>${fmt(allTot.connected)}</td><td>${pct(allTot.connected,allTot.total_dials)}</td>
+          <td>${fmt(allTot.prod)}</td><td>${pct(allTot.prod,allTot.connected)}</td>
+          <td>${fmt(allTot.h_int)}</td><td>${fmt(allTot.h_cb)}</td><td>${fmt(allTot.h_int+allTot.h_cb)}</td>
+          <td>${fmt(allTot.dm_dials)}</td><td>${fmt(allTot.dm_conn)}</td><td>${pct(allTot.dm_conn,allTot.dm_dials)}</td>
+        </tr>
+      </tbody></table>
+    </div>
+  </div>`;
+
+  el.innerHTML=`
+    <div style="margin-bottom:20px;">
+      <div style="font-size:20px;font-weight:300;color:var(--text);letter-spacing:-0.3px;margin-bottom:6px;"><strong>Day-wise</strong> View</div>
+      <div style="font-size:12px;color:var(--text3);">Click month tab → expand week → see daily breakdown</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);">
+      <div class="dw-tabs">${tabsHtml}</div>
+      <div class="dw-panels">${monthPanels}${yearPanel}</div>
+    </div>
+    <div class="dash-footer">
+      <span>CarmaOne — AI Sales Tele Calling MIS &nbsp;·&nbsp; Confidential</span>
+      <span>Generated ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</span>
+    </div>`;
+}
+
+function switchDwTab(key, btn) {
+  document.querySelectorAll('.dw-tab').forEach(t=>t.classList.remove('dw-tab-active'));
+  document.querySelectorAll('.dw-panel').forEach(p=>p.classList.remove('dw-panel-active'));
+  btn.classList.add('dw-tab-active');
+  const p=document.getElementById('dwp_'+key);
+  if(p) p.classList.add('dw-panel-active');
+}
+
+function toggleM(id) {
+  const b=document.getElementById(id+'_body'), c=document.getElementById(id+'_c');
+  if(!b||!c) return;
+  const open=b.style.display!=='none';
+  b.style.display=open?'none':'table-row';
+  c.style.transform=open?'':'rotate(180deg)';
+}
+
+// ── AUDIT TRAIL ──
+async function loadAudit() {
+  if(auditLoaded) return;
+  const el=document.getElementById('view-audit');
+  el.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);">Loading audit trail...</div>';
+  try {
+    const res=await fetch('https://mis-backend-python.onrender.com/audit?t='+Date.now());
+    const log=await res.json();
+    renderAudit(log);
+    auditLoaded=true;
+  } catch(e) {
+    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--rose);">Could not load audit trail. <span style="cursor:pointer;color:var(--indigo);" onclick="auditLoaded=false;loadAudit()">Retry</span></div>';
+  }
+}
+
+function renderAudit(log) {
+  const el=document.getElementById('view-audit');
+  if(!log||!log.length){el.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);">No audit records yet.</div>';return;}
+  const rows=log.map(entry=>{
+    const isOk=entry.status==='SUCCESS';
+    const badge=isOk
+      ?`<span style="background:#dcf5ed;color:#059669;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600;">✓ Success</span>`
+      :`<span style="background:#fde8ee;color:#e11d48;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600;">✗ Rejected</span>`;
+    const changes=entry.changes?Object.entries(entry.changes).map(([k,v])=>`<div style="font-size:11px;color:var(--text2);padding:2px 0;border-bottom:1px solid var(--border);">🔹 <b>${k}</b>: ${v}</div>`).join(''):'';
+    const errors=(entry.errors||[]).map(e=>`<div style="font-size:11px;color:var(--rose);padding:2px 0;">${e}</div>`).join('');
+    const warns=(entry.warnings||[]).map(w=>`<div style="font-size:11px;color:var(--amber);padding:2px 0;">${w}</div>`).join('');
+    return `<tr>
+      <td style="padding:10px 14px;vertical-align:top;white-space:nowrap;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);">${entry.ts||'—'}</td>
+      <td style="padding:10px 14px;vertical-align:top;font-size:13px;font-weight:600;white-space:nowrap;">${entry.by||'—'}</td>
+      <td style="padding:10px 14px;vertical-align:top;">${badge}</td>
+      <td style="padding:10px 14px;vertical-align:top;min-width:320px;">${changes||errors||'<span style="font-size:11px;color:var(--text3);">—</span>'}${warns?`<div style="margin-top:4px;color:var(--amber);font-size:10px;">Warnings: ${warns}</div>`:''}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`
+    <div style="margin-bottom:20px;">
+      <div style="font-size:20px;font-weight:300;color:var(--text);letter-spacing:-0.3px;margin-bottom:6px;"><strong>Audit</strong> Trail</div>
+      <div style="font-size:12px;color:var(--text3);">All upload activity — who uploaded, when, what changed</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);">
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="background:var(--bg3);">
+            ${thCell('Timestamp (IST)','left')}${thCell('Uploaded By','left')}${thCell('Status','left')}${thCell('Details','left')}
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3);text-align:right;">
+      Showing last ${log.length} records &nbsp;·&nbsp;
+      <span style="cursor:pointer;color:var(--indigo);" onclick="auditLoaded=false;loadAudit()">↺ Refresh</span>
+    </div>
+    <div class="dash-footer">
+      <span>CarmaOne — AI Sales Tele Calling MIS &nbsp;·&nbsp; Confidential</span>
+      <span>Generated ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</span>
+    </div>`;
+}
+
+function switchView(v,btn){
+  document.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('view-'+v).classList.add('active');
+}
+</script>
+</body>
+</html>
